@@ -23,7 +23,7 @@ The development workflow is:
 3. **Attach VS Code to the running container** to edit and build code.
 4. **Use Git inside WSL2** for source control.
 
-### 1. Install WSL2 and Ubuntu
+### Install WSL2 and Ubuntu
 
 For reference, here's Microsoft’s official guide: [Install WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
 
@@ -61,7 +61,7 @@ To run WSL, **press the windows key and search WSL** and launch the executable. 
 sudo apt update && sudo apt upgrade -y
 ```
 
-### 2. Install Docker Desktop
+### Install Docker Desktop
 
 Download and install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/). Docker desktop is a windows/mac application that will automatically detect running WSL instances and you'll be able to access **`docker`** commands within WSL without needing to install it explicitly.
 
@@ -77,22 +77,21 @@ docker --version
 
 If this doesn't work, try restarting your environment by first quitting docker desktop, restarting WSL (press Cntrl + D in the WSL terminal to exit it), and try again.
 
-### 3. Install Git in WSL
+### Install Git in WSL
 
 Since development happens inside of containers that we run from docker images, you’ll want Git available in your Ubuntu shell:
 
 ```bash
-sudo apt update
-sudo apt install -y git
+sudo apt install git -y
 ```
 
-Verify:
+Verify by entering the following:
 
 ```bash
 git --version
 ```
 
-### 4. Clone the Repository
+### Clone the Repository
 
 Inside WSL, make a `git` directory. This is where we will store the QADT AEAC 2026 repository. First navigate to your home (use `cd` to navigate directories, i.e `cd ~`) directory, make a `git` directory using `mkdir`. Then navigate into your git directory and clone the repo using `git clone`.
 
@@ -100,29 +99,75 @@ Inside WSL, make a `git` directory. This is where we will store the QADT AEAC 20
 cd ~
 mkdir git
 cd git
-git clone <your-repo-url>
+git clone https://github.com/Queen-s-Aerospace-Design-Team/AEAC2026.git
 ```
 
-### 5. Build and Run the Docker Container
+### Build Docker Image and Run the Container
 
-From the project directory, build the image:
+***CAUTION:** Building a docker container can take a while. Try to complete this step in one sitting.*
+
+Navigate to the project directory using the `cd` command (Ex: `cd ~/git/AEAC2026`).Then navigate to the docker image folder `docker-dev` and build the image:
 
 ```bash
-docker build -t project-dev .
+docker build -t qadt-image .
 ```
 
-Run the container (adjust ports/volumes as needed):
+The '.' (which always means your current working directory) specifies the directory in which the Dockerfile is located to build the image. In this case, if you navigated to the correct directory, `AEAC2026/docker-dev`. We use the `-t` argument, which corresponds to the image tag, to give the image a name `qadt-image`.
+
+You can always list the docker images you have built using:
 
 ```bash
-docker run -it --rm \
-    -v $(pwd):/workspace \
-    -p 3000:3000 \
-    project-dev
+docker images
+----------------
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+qadt-image   latest    cae451abaf44   12 days ago   17.6GB
 ```
 
-### 6. Attach VS Code to Container
+Run the container using the `runContainer.sh` script found under `AEAC2026/docker-dev` by executing the following:
 
-We use [VS Code Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
+```bash
+./runContainer.sh
+```
+
+The `./` at the beginning means to execute. If `runContainer.sh` existed in another directory, you would instead enter: `./path/to/script/runContainer.sh`.
+
+If this does not work, enable permissions to execute the script with:
+
+```bash
+sudo chmod +x runContainer.sh
+```
+
+`chmod` changes the file mode bits of files or directories to set read, write, and execute permissions for the owner, group, and others. In this case, we used `+x` which to enables execution of the script.
+
+Once the container is running, you'll notice that the user is set to `qadt@container`.
+
+Username: `qadt`
+Password: `aero`
+
+You will need to enter the password `aero` when typing `sudo` commands in the container shell.
+
+Feel free to explore the home directory of the dev container.
+
+Once you want to exit the container, enter `exit`.
+
+Confirm that no docker container is running by listing the running containers:
+
+```bash
+docker ps     # To see running containers
+docker ps -a  # To see all containers
+```
+
+If you ever need to stop a container explicitly, run:
+
+```bash
+docker stop qadt-dev
+```
+
+Or stop it in the Docker Desktop GUI.
+
+### Attach VS Code to Container
+
+We use the [VS Code Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension. Make sure you have VSCode downloaded first.
 
 Steps:
 1. Install VS Code and the **Remote - Containers** extension.
@@ -131,15 +176,15 @@ Steps:
    code . # code (Visual Studio Code) is a command line executable that takes its first argument as 
           # The directory in which it will open up.
    ```
-3. When VS Code opens, click the green button in the bottom-left corner:  
-   **“Attach to Running Container”** → Select `project-dev`.
+3. When VS Code opens, click the **Remote Explorer** button on the left hand side of the screen:  
+4. Under the dropdown select **Dev Contaienrs**, hover over `qadt-image` and click the &rarr; (right arrow) icon 'Attach in Current Window'.
 
 Now you can edit and build directly inside the container.
 
-### 7. Workflow Summary
+### Workflow Summary
 
 - Use **WSL2 (Ubuntu)** as your main environment.  
-- **Git** operations happen in WSL.  
+- Since your directory `~/git` is mounted as a volume in the container, git operations can happen in either WSL or the container.  
 - **Docker Desktop** powers containers via WSL.  
 - **VS Code Remote - Containers** attaches you to the running container for development.  
 
