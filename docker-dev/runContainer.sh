@@ -31,7 +31,8 @@ IMAGE_NAME="qadt-image"
 GIT_DIR="$HOME/git"
 
 if [ "$(docker ps -a -q -f name=$CONTAINER_NAME)" ]; then
-    read -p "Container $CONTAINER_NAME already exists. Do you want to remove it? WARNING: THIS WILL DELETE ANY LOCAL CHANGES YOU MADE IN THE CONTAINER! [y/N] " response
+     echo "Container '$CONTAINER_NAME' already exists. Do you want to remove it?" 
+     read -p "WARNING: THIS WILL DELETE ANY LOCAL CHANGES YOU MADE IN THE CONTAINER! [y/N] " response
     if [[ "$response" =~ ^[Yy]$ ]]; then
         if docker rm -f $CONTAINER_NAME; then
             echo "Successfully removed '$CONTAINER_NAME'"
@@ -52,7 +53,7 @@ docker run -it \
     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
     --volume="/dev:/dev" \
     --volume="/var/run/dbus/:/var/run/dbus/:z" \
-    --volume="$GIT_DIR:$HOME" \
+    --volume="$GIT_DIR:/home/qadt/git" \
     --privileged \
     --name $CONTAINER_NAME \
     $IMAGE_NAME
