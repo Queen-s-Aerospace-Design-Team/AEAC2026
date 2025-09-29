@@ -8,7 +8,17 @@ The below sections cover onboarding setups required to setup the QADT AEAC 2026 
 
 ## Prerequisites
 
-Learn about terminal development and navigating the linux shell.
+***You may refer to the resources in this section as you complete your onboarding.***
+
+Learn some of the basics of **Linux** and navigating the terminal, **Docker**, and **Git**. Prioritize learn about Linux first and complete the first few onboarding tasks until you reach the docker section. Review docker, and optionally you may begin learning git. Learning git will be *necessary* for future contribution to QADT Software. 
+
+
+1. **Linux Fundamentals** video. Click on the link in the description to go to the website seen in the video.
+[![HERE](https://img.youtube.com/vi/GDPjY7DKpSQ/maxresdefault.jpg)](https://www.youtube.com/watch?v=GDPjY7DKpSQ)
+2. You may *optionally* learn a bit about **Docker** since you'll be using it in the following sections.
+[![HERE](https://img.youtube.com/vi/DQdB7wFEygo/maxresdefault.jpg)](https://www.youtube.com/watch?v=DQdB7wFEygo)
+3. Learn fundamentals of **git** version control with [this](https://www.w3schools.com/git/) W3schools tutorial.
+
 
 ## Onboarding - WSL
 
@@ -116,7 +126,7 @@ The '.' (which always means your current working directory) specifies the direct
 
 You can always list the docker images you have built using:
 
-```bash
+```
 docker images
 ----------------
 REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
