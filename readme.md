@@ -10,7 +10,7 @@ The below sections cover onboarding setups required to setup the QADT AEAC 2026 
 
 ***You may refer to the resources in this section as you complete your onboarding.***
 
-Learn some of the basics of **Linux** and navigating the terminal, **Docker**, and **Git**. Prioritize learn about Linux first and complete the first few onboarding tasks until you reach the docker section. Review docker, and optionally you may begin learning git. Learning git will be *necessary* for future contribution to QADT Software. 
+Learn some of the basics of **Linux** and navigating the terminal, **Docker**, and **Git**. Prioritize learning about Linux and complete the first few onboarding tasks until you reach the docker section. Review docker, and optionally you may begin learning git. Learning git will be *necessary* for future contribution to QADT Software. 
 
 
 1. **Linux Fundamentals** video. Click on the link in the description to go to the website seen in the video.
