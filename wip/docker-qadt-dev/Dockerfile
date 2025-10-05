@@ -39,6 +39,18 @@ COPY .bashrc .profile .tmux.conf ${HOME_DIR}
 RUN mkdir -p ${HOME_DIR}/ArduPilot/src \
  	&& vcs import --recursive --input  https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.repos ${HOME_DIR}/ArduPilot/src
 
+
+# Clone uisng github --recursive --depth 1, maybe specific branch for ubuntu 22.04 and for ROS2 Humble?
+# Upload the built firmware to the flight controller hardware.
+# -----------------
+# RUN git clone --recurse-submodules --depth 1 https://github.com/ArduPilot/ardupilot.git \
+#       && ./Tools/environment_install/install-prereqs-ubuntu.sh -y
+
+
+# Gazebo Harmonic install LTS sudo apt-get install curl lsb-release gnupg
+# -----------------
+# RUN sudo apt-get install curl lsb-release gnupg
+
 # Resolve ROS deps (must preform as root user and tell rosdep specifically with --as-root). Use --rosdistro to avoid sourcing at build.
 RUN apt-get update \
 	&& rosdep update \
