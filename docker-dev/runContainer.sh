@@ -26,8 +26,8 @@ ls -FAlh $XAUTH
 
 echo "Running docker container..."
 
-CONTAINER_NAME="qadt-dev2"
-IMAGE_NAME="qadt-dev"
+CONTAINER_NAME="qadt-dev"
+IMAGE_NAME="qadt-image"
 GIT_DIR="$HOME/git"
 
 if [ "$(docker ps -a -q -f name=$CONTAINER_NAME)" ]; then
@@ -46,7 +46,7 @@ if [ "$(docker ps -a -q -f name=$CONTAINER_NAME)" ]; then
     fi
 fi
 
-docker run -it \
+docker run -it \s3
     -p 18570:18570/udp \
     -e DISPLAY=:0 \
     -e XAUTHORITY=/home/qadt/.Xauthority \
@@ -59,7 +59,6 @@ docker run -it \
     --privileged \
     --name "$CONTAINER_NAME" \
     "$IMAGE_NAME"
-
 
 # Extra commands for 'docker run':
 #   --gpus all      Unable to use for WSL. Use with a native Linux installation. Not via WSL or running a

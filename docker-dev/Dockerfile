@@ -74,34 +74,34 @@ COPY px4_ubuntu.sh \
 	requirements.txt \
 	./
 
-# RUN bash px4_ubuntu.sh \
-# 	&& pip3 install --no-cache-dir -r requirements.txt
+RUN bash px4_ubuntu.sh \
+	&& pip3 install --no-cache-dir -r requirements.txt
 
 # Run the setup and build for PX4
-# RUN git clone --single-branch --branch v1.16.0 https://github.com/PX4/PX4-Autopilot.git --recursive --depth 1 \
-# 	&& make -C PX4-Autopilot
+RUN git clone --single-branch --branch v1.16.0 https://github.com/PX4/PX4-Autopilot.git --recursive --depth 1 \
+	&& make -C PX4-Autopilot
 
 # Download QGroundControl
-RUN apt-get update && apt-get install libfuse2 -y --no-install-recommends \
-	&& ARCH=$(arch) \
-	&& curl https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl-$ARCH.AppImage -O \
-	&& chmod +x QGroundControl-$ARCH.AppImage 
+# RUN apt-get update && apt-get install libfuse2 -y --no-install-recommends \
+# 	&& ARCH=$(arch) \
+# 	&& curl https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl-$ARCH.AppImage -O \
+# 	&& chmod +x QGroundControl-$ARCH.AppImage 
 
 # Install ArduPilot and MicroXRCEDDSGen
-WORKDIR $HOME_DIR/ArduPilot
+# WORKDIR $HOME_DIR/ArduPilot
 
-RUN mkdir src \
-	&& pip3 install --no-cache-dir vcstools \
-	&& vcs import --recursive --input  https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.repos src \
-	&& rosdep update \
-	&& source /opt/ros/humble/setup.sh \
-	&& rosdep install --from-paths src --ignore-src -r -y
+# RUN mkdir src \
+# 	&& pip3 install --no-cache-dir vcstools \
+# 	&& vcs import --recursive --input  https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.repos src \
+# 	&& rosdep update \
+# 	&& source /opt/ros/humble/setup.sh \
+# 	&& rosdep install --from-paths src --ignore-src -r -y
 
-WORKDIR $HOME_DIR
+# WORKDIR $HOME_DIR
 
-RUN apt-get install default-jre -y --no-install-recommends \
-	&& git clone https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git --recursive --depth 1 \
-	&& cd Micro-XRCE-DDS-Gen && ./gradlew assemble
+# RUN apt-get install default-jre -y --no-install-recommends \
+# 	&& git clone https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git --recursive --depth 1 \
+# 	&& cd Micro-XRCE-DDS-Gen && ./gradlew assemble
 
 # Copy necessary files from the dockerfile's directory into the container
 COPY .bashrc \

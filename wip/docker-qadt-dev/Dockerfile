@@ -39,7 +39,6 @@ COPY .bashrc .profile .tmux.conf ${HOME_DIR}
 RUN mkdir -p ${HOME_DIR}/ArduPilot/src \
  	&& vcs import --recursive --input  https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.repos ${HOME_DIR}/ArduPilot/src
 
-
 # Clone uisng github --recursive --depth 1, maybe specific branch for ubuntu 22.04 and for ROS2 Humble?
 # Upload the built firmware to the flight controller hardware.
 # -----------------
