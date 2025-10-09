@@ -46,7 +46,7 @@ if [ "$(docker ps -a -q -f name=$CONTAINER_NAME)" ]; then
     fi
 fi
 
-docker run -it \s3
+docker run -it \
     -p 18570:18570/udp \
     -e DISPLAY=:0 \
     -e XAUTHORITY=/home/qadt/.Xauthority \
