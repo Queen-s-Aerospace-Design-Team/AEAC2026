@@ -68,7 +68,6 @@ RUN git clone --branch v2.4.3 https://github.com/eProsima/Micro-XRCE-DDS-Agent.g
     && ldconfig \
 	&& rm -rf Micro-XRCE-DDS-Agent/build
 
-# Effectively copied 'px4_ubuntu.sh' from "bash ./Tools/setup/ubuntu.sh" above
 # Python dependencies in requirements.txt
 COPY px4_ubuntu.sh \
 	requirements.txt \
@@ -80,12 +79,6 @@ RUN bash px4_ubuntu.sh \
 # Run the setup and build for PX4
 RUN git clone --single-branch --branch v1.16.0 https://github.com/PX4/PX4-Autopilot.git --recursive --depth 1 \
 	&& make -C PX4-Autopilot
-
-# Download QGroundControl
-RUN ARCH=$(arch) && \
-	curl https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl-$ARCH.AppImage -O \
-	&& chmod +x QGroundControl-$ARCH.AppImage \ 
-	&& apt-get install libfuse2 -y --no-install-recommends
 
 # --------------------------
 # Entrypoint and User
@@ -99,7 +92,7 @@ RUN useradd -ms /bin/bash qadt && \
 	# && echo "qadt ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/qadt \
     # && chmod 0440 /etc/sudoers.d/qadt
 	
-# Copy files in the dockerfile's directory into the container
+# Copy necessary files from the dockerfile's directory into the container
 COPY .bashrc \
 	.profile \
 	.tmux.conf \
@@ -107,8 +100,8 @@ COPY .bashrc \
 	./
 
 # Make user 'qadt' own all files in home directory
-RUN chown -R qadt:qadt $HOME_DIR \
-	&& chmod +x $HOME_DIR/entrypoint.sh
+RUN chown -R qadt:qadt ${HOME_DIR} \
+	&& chmod +x ${HOME_DIR}/entrypoint.sh
 
 # Switch to user and run entry point
 USER qadt

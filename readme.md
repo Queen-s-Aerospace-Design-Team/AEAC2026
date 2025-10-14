@@ -2,7 +2,7 @@
 
 The purpose of this repository is to house all software associated with development environments, containers, computer vision, autonomy, and more pertaining to the AEAC 2026 competition developed by **Queen's Aerospace Design Team (QADT)**.
 
-# Development Environment Onboarding
+# Development Environment Setup
 
 The below sections cover onboarding setups required to setup the QADT AEAC 2026 development environment for **WSL**, **dual boot Ubuntu Linux**, and **MacOS**.
 
@@ -10,7 +10,7 @@ The below sections cover onboarding setups required to setup the QADT AEAC 2026 
 
 ***You may refer to the resources in this section as you complete your onboarding.***
 
-Learn some of the basics of **Linux** and navigating the terminal, **Docker**, and **Git**. Prioritize learn about Linux first and complete the first few onboarding tasks until you reach the docker section. Review docker, and optionally you may begin learning git. Learning git will be *necessary* for future contribution to QADT Software. 
+Learn some of the basics of **Linux** and navigating the terminal, **Docker**, and **Git**. Prioritize learning about Linux and complete the first few onboarding tasks until you reach the docker section. Review docker, and optionally you may begin learning git. Learning the basics of git will be ***necessary*** for future contributions to QADT Software. 
 
 
 1. **Linux Fundamentals** video. Click on the link in the description to go to the website seen in the video.
@@ -20,7 +20,7 @@ Learn some of the basics of **Linux** and navigating the terminal, **Docker**, a
 3. Learn fundamentals of **git** version control with [this](https://www.w3schools.com/git/) W3schools tutorial.
 
 
-## Onboarding - WSL
+## Setup - WSL
 
 This project is developed and built inside Docker containers running on **WSL2 (Windows Subsystem for Linux)**. We will use **Ubuntu (latest)** as the default WSL distribution to keep the setup consistent across all contributors.
 
@@ -175,19 +175,26 @@ docker stop qadt-dev
 
 Or stop it in the Docker Desktop GUI.
 
+If you want to resume your container session, run:
+
+```bash
+docker start -i qadt-dev # '-i' means interactive and will attach to its terminal
+```
+
 ### Attach VS Code to Container
 
-We use the [VS Code Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension. Make sure you have VSCode downloaded first.
+We use the [VS Code Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
 
 Steps:
-1. Install VS Code and the **Remote - Containers** extension.
+1. Install VS Code.
 2. In WSL, run:
    ```bash
    code . # code (Visual Studio Code) is a command line executable that takes its first argument as 
           # The directory in which it will open up.
    ```
-3. When VS Code opens, click the **Remote Explorer** button on the left hand side of the screen:  
-4. Under the dropdown select **Dev Contaienrs**, hover over `qadt-image` and click the &rarr; (right arrow) icon 'Attach in Current Window'.
+3. Install the **Remote - Containers** extension.
+4. When VS Code opens, click the **Remote Explorer** button on the left hand side of the screen:  
+5. Under the dropdown select **Dev Contaienrs**, hover over `qadt-image` and click the &rarr; (right arrow) icon 'Attach in Current Window'.
 
 Now you can edit and build directly inside the container.
 
@@ -209,7 +216,11 @@ This ensures a consistent and reproducible environment across all contributors.
   - Install [VS Code in Windows](https://code.visualstudio.com/Download).
   - Run `wsl --shutdown` in a **Windows terminal** and reopen Ubuntu.
 
-## Onboarding - Dual Boot
+## Setup - MacOS
+
+TODO
+
+## Setup - Dual Boot
 
 [Install docker if not done already](https://docs.docker.com/engine/install/ubuntu/)
 
@@ -253,7 +264,7 @@ docker stop qadt_cont
 docker rm qadt_cont
 ```
 
-## Onboarding - MacOS
+# Other
 
 ## Running ROS examples
 
@@ -263,7 +274,7 @@ Navigate to the `ros_examples_cpp` and enter the command:
 colcon build && source install/setup.sh
 ```
 
-To build all packages under the `AEAC2026/ros_examples_cpp/src` directory. Then run `ros2 run [pkg_name] [executable_name]`. For example, in one terminal instance run, `ros2 run service_02 server`, and in another terminal instance run, `ros2 run service_02 client`.
+To build all packages under the `AEAC2026/ros_examples_cpp/src` directory. Then run `ros2 run [pkg_name] [executable_name]`. For example, in one terminal instance run, `ros2 run pubsub_01 publisher`, and in another terminal instance run, `ros2 run pubsub_01 subscriber`.
 
 Feel free to experiment with the ROS2 examples.
 
