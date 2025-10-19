@@ -1,0 +1,80 @@
+{
+    "name": "QADT Dev Container (PX4)",
+    "build": { "dockerfile": "Dockerfile" },
+
+    "overrideCommand": false,
+    "remoteUser": "qadt",
+    "userEnvProbe": "loginInteractiveShell",
+
+    // Mount your repo where your script expects it. We will work under `~/AEAC2026
+    "workspaceFolder": "/home/qadt/git",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/qadt/git,type=bind",
+
+    // Mirror runContainer.sh: X11, dbus, /dev, UDP port, privileged
+    "privileged": true,
+    "runArgs": [
+        "--name", "qadt-devcontainer",              // Name of container
+        // "--network", "host",                        // Access host network
+        "--ipc", "host",                            // Allow the container to share the same Inter-Process Communcation (IPC) namespace as the host
+        "-p", "18570:18570/udp"                    // Port forward for MAVLink messages to PX4
+        // "-v", "/tmp/.X11-unix:/tmp/.X11-unix:rw",   // Only needed on Linux
+        // "-v", "/dev:/dev",
+        // "-v", "/var/run/dbus/:/var/run/dbus/:z",
+        // If you have a native Linux host with NVIDIA, you can also add:
+        // "--gpus", "all"                             // This is needed for hardware acceleration on nvidia gpus
+    ],
+
+    // Env used by your script
+    "containerEnv": {
+        // On Linux hosts DISPLAY is usually ":0". Using local DISPLAY if available.
+        "DISPLAY": "host.docker.internal:0",
+        // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",  
+		// "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
+        "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST"
+        // "XAUTHORITY": "/home/qadt/.Xauthority",
+        // "QT_X11_NO_MITSHM": "1"
+    },
+
+    // Mount the host's .Xauthority so GUI apps can connect to X
+    "mounts": [
+        // "source=${localEnv:HOME}/.Xauthority,target=/home/qadt/.Xauthority,type=bind,ro",
+
+        // Optional: persist ccache between rebuilds
+        "source=devcontainer-ccache,target=/home/qadt/.ccache,type=volume"
+    ],
+
+    // Basic init for PID 1
+    "init": true,
+
+    // Ports UI labels (VS Code will still show these even though we map them with runArgs)
+    "forwardPorts": [18570],
+    "portsAttributes": {
+        "18570": { "label": "PX4 UDP (18570/udp)" }
+    },
+
+    // Editor setup inside the container
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "cmake.generator": "Ninja",
+                "python.defaultInterpreterPath": "/usr/bin/python3"
+            },
+            "extensions": [
+                "ms-iot.vscode-ros",
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-themes",
+                "ms-vscode.cmake-tools",
+                "twxs.cmake",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "ms-azuretools.vscode-docker",
+                // "eamodio.gitlens",
+                "ms-vscode.makefile-tools",
+                "redhat.vscode-xml"
+            ]
+        }
+    },
+
+    "postCreateCommand": "/bin/bash -lc 'echo Dev container ready for ROS $ROS_DISTRO'"
+}
