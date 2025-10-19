@@ -6,7 +6,7 @@
     "userEnvProbe": "loginInteractiveShell",
 
     // Mount your repo where your script expects it. We will work under `~/AEAC2026
-    "workspaceFolder": "/home/qadt/${localWorkspaceFolder}",
+    "workspaceFolder": "/home/qadt/AEAC2026",
     "workspaceMount": "source=${localWorkspaceFolder},target=/home/qadt/AEAC2026,type=bind",
 
     // Mirror runContainer.sh: X11, dbus, /dev, UDP port, privileged
