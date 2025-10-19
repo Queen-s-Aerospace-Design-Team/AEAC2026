@@ -23,7 +23,7 @@
     // Env used by your script
     "containerEnv": {
         // On Linux hosts DISPLAY is usually ":0". Using local DISPLAY if available.
-        "DISPLAY": "${localEnv:DISPLAY}",
+        "DISPLAY": ":0",
         "XAUTHORITY": "/home/qadt/.Xauthority",
         "QT_X11_NO_MITSHM": "1",
         // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",  
