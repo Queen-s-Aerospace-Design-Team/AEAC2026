@@ -59,27 +59,34 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # --------------------------
-# User first (for ArduPilot script)
+# Create user first (sudo NOPASSWD), set envs
 # --------------------------
-RUN useradd -ms /bin/bash qadt && echo "qadt ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/qadt
+RUN useradd -ms /bin/bash qadt \
+ && echo "qadt ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/qadt \
+ && adduser qadt dialout
+
 USER qadt
-ENV HOME_DIR=/home/qadt
-WORKDIR $HOME_DIR
-# Ensure user-level pip binaries are on PATH
-ENV PATH="$HOME_DIR/.local/bin:${PATH}"
+# Ensure non-interactive shells have a username/home
+ENV USER=qadt \
+    LOGNAME=qadt \
+    HOME=/home/qadt \
+    PATH="/home/qadt/.local/bin:${PATH}"
+
+WORKDIR /home/qadt
 
 # --------------------------
-# ArduPilot (run as non-root)
+# ArduPilot
 # --------------------------
 RUN git clone --depth 1 https://github.com/ArduPilot/ardupilot.git
-WORKDIR $HOME_DIR/ardupilot
+WORKDIR /home/qadt/ardupilot
 
-# Runs 'sudo' internally; must NOT be root
+# This script expects a non-root $USER and uses sudo internally
 RUN Tools/environment_install/install-prereqs-ubuntu.sh -y \
  && pip3 install --user --no-cache-dir -U pip future pymavlink MAVProxy
 
 # Build SITL
 RUN ./waf configure --board sitl && ./waf copter
+
 
 # --------------------------
 # User, dotfiles, entry
