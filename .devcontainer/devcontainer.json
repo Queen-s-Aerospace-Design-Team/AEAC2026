@@ -10,6 +10,7 @@
     "workspaceMount": "source=${localWorkspaceFolder},target=/home/qadt/AEAC2026,type=bind",
 
     // Mirror runContainer.sh: X11, dbus, /dev, UDP port, privileged
+    "init": true,
     "privileged": true,
     "runArgs": [
         "--name", "qadt-devcontainer",              // Name of container
@@ -25,22 +26,16 @@
         "DISPLAY": ":0", // On Linux hosts DISPLAY is usually ":0".
         "XAUTHORITY": "/home/qadt/.Xauthority",
         "QT_X11_NO_MITSHM": "1",
-        // "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",  
-		// "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
         "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST"
-        // "XAUTHORITY": "/home/qadt/.Xauthority",
-        // "QT_X11_NO_MITSHM": "1"
     },
 
     // Mount the host's .Xauthority so GUI apps can connect to X
     "mounts": [
         "source=${localEnv:HOME}/.Xauthority,target=/home/qadt/.Xauthority,type=bind,ro",
-        "source=/dev,target=/dev,type=bind,ro",
+        // "source=/dev,target=/dev,type=bind,ro",
         "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind" // Only needed on Linux
     ],
 
-    // Basic init for PID 1
-    "init": true,
 
     // Ports UI labels (VS Code will still show these even though we map them with runArgs)
     "forwardPorts": [18570],
@@ -63,6 +58,7 @@
                 "ms-vscode.cpptools-extension-pack",
                 "ms-vscode.cmake-tools",
                 "twxs.cmake",
+                "josetr.cmake-language-support-vscode",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "redhat.vscode-xml"
