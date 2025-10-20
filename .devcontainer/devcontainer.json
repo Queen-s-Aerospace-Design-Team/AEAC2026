@@ -5,7 +5,7 @@
     "remoteUser": "qadt",
     "userEnvProbe": "loginInteractiveShell",
 
-    // Mount your repo where your script expects it. We will work under `~/AEAC2026
+    // Mount your repo where your script expects it. We will work under '~/AEAC2026'
     "workspaceFolder": "/home/qadt/AEAC2026",
     "workspaceMount": "source=${localWorkspaceFolder},target=/home/qadt/AEAC2026,type=bind",
 

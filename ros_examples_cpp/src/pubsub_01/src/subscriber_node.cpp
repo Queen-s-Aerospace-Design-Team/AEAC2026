@@ -14,7 +14,7 @@ public:
             RCLCPP_INFO(get_logger(), "Received Message: %s", message->data.c_str());
         };
 
-        m_subscription = create_subscription<std_msgs::msg::String>("topic", 10, topic_callback);
+        m_subscription = create_subscription<std_msgs::msg::String>("pubsub_01_msg", 10, topic_callback);
     }
 
 private:

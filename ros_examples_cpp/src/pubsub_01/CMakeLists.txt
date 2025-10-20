@@ -30,23 +30,23 @@ endif()
 # ----- Necessary CMake Calls to add your ROS2 Node -----
 
 # Make executable and add your libraries
-add_executable(talker src/publisher_node.cpp)
-add_executable(listener src/subscriber_node.cpp)
+add_executable(publisher src/publisher_node.cpp)
+add_executable(subscriber src/subscriber_node.cpp)
 
-target_link_libraries(talker PUBLIC 
+target_link_libraries(publisher PUBLIC 
     rclcpp::rclcpp 
     ${std_msgs_TARGETS}
 )
 
-target_link_libraries(listener PUBLIC 
+target_link_libraries(subscriber PUBLIC 
     rclcpp::rclcpp 
     ${std_msgs_TARGETS}
 )
 
 # Specify install function so ROS2 can find your node.
 install(TARGETS 
-    talker 
-    listener 
+    publisher 
+    subscriber 
     DESTINATION lib/${PROJECT_NAME}
 )
 
