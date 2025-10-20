@@ -96,14 +96,16 @@ RUN ./waf configure --board sitl && ./waf copter
 # Comment out any that you don't have.
 # COPY .bashrc .profile .tmux.conf $HOME_DIR/
 
-# Run script that launches SITL -> QGC on the Mac host (14550)
-# Use the run_sitl.sh from earlier; keep it in your build context.
+
+# Install the entry script into a root-owned path, as root
 COPY run_sitl.sh /usr/local/bin/run_sitl.sh
-RUN chmod +x /usr/local/bin/run_sitl.sh \
- && chown -R qadt:qadt $HOME_DIR
+RUN chmod 0755 /usr/local/bin/run_sitl.sh
 
+# If you previously copied anything into /home/qadt as root, ensure ownership:
+RUN chown -R qadt:qadt /home/qadt
+
+# Drop privileges for runtime
 USER qadt
-WORKDIR $HOME_DIR
+WORKDIR /home/qadt
 
-# Mac-safe: use host.docker.internal (Docker Desktop for Mac)
 ENTRYPOINT ["/usr/local/bin/run_sitl.sh"]
