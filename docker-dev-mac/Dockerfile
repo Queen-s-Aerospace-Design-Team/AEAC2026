@@ -59,24 +59,27 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # --------------------------
-# Workspace and ArduPilot
+# User first (for ArduPilot script)
 # --------------------------
-
+RUN useradd -ms /bin/bash qadt && echo "qadt ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/qadt
+USER qadt
+ENV HOME_DIR=/home/qadt
 WORKDIR $HOME_DIR
+# Ensure user-level pip binaries are on PATH
+ENV PATH="$HOME_DIR/.local/bin:${PATH}"
 
-# Clone ArduPilot
+# --------------------------
+# ArduPilot (run as non-root)
+# --------------------------
 RUN git clone --depth 1 https://github.com/ArduPilot/ardupilot.git
-
-# Install ArduPilot prereqs
 WORKDIR $HOME_DIR/ardupilot
+
+# Runs 'sudo' internally; must NOT be root
 RUN Tools/environment_install/install-prereqs-ubuntu.sh -y \
- && pip3 install --no-cache-dir -U pip future pymavlink MAVProxy
+ && pip3 install --user --no-cache-dir -U pip future pymavlink MAVProxy
 
-# Pre-build SITL (speeds up first run)
+# Build SITL
 RUN ./waf configure --board sitl && ./waf copter
-
-# Convenience: autotest tools on PATH
-ENV PATH="$HOME_DIR/ardupilot/Tools/autotest:${PATH}"
 
 # --------------------------
 # User, dotfiles, entry
