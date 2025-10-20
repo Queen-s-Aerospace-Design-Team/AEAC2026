@@ -92,11 +92,6 @@ RUN ./waf configure --board sitl && ./waf copter
 # User, dotfiles, entry
 # --------------------------
 
-# Add new user 'qadt'
-RUN useradd -ms /bin/bash qadt \
- && echo "qadt:aero" | chpasswd \
- && usermod -aG sudo qadt
-
 # (Optional) bring your shell/dev dotfiles if present in build context
 # Comment out any that you don't have.
 # COPY .bashrc .profile .tmux.conf $HOME_DIR/
