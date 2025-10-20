@@ -92,17 +92,18 @@ RUN ./waf configure --board sitl && ./waf copter
 # User, dotfiles, entry
 # --------------------------
 
-# (Optional) bring your shell/dev dotfiles if present in build context
-# Comment out any that you don't have.
-# COPY .bashrc .profile .tmux.conf $HOME_DIR/
+# Switch to root for system paths
+USER root
 
+# (Optional) bring your shell/dev dotfiles; set ownership at copy-time
+# COPY --chown=qadt:qadt .bashrc .profile .tmux.conf /home/qadt/
 
-# Install the entry script into a root-owned path, as root
-COPY run_sitl.sh /usr/local/bin/run_sitl.sh
+# Install the entry script into /usr/local/bin as root
+COPY --chown=root:root run_sitl.sh /usr/local/bin/run_sitl.sh
 RUN chmod 0755 /usr/local/bin/run_sitl.sh
 
-# If you previously copied anything into /home/qadt as root, ensure ownership:
-RUN chown -R qadt:qadt /home/qadt
+# If you copied anything into /home/qadt as root, ensure ownership (usually not needed here)
+# RUN chown -R qadt:qadt /home/qadt
 
 # Drop privileges for runtime
 USER qadt
