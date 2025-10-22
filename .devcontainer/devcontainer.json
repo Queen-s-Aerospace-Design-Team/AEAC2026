@@ -14,7 +14,7 @@
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
             "configureZshAsDefaultShell": false, // zsh terminal style will exist, but will only use bash
-            "upgradePackages": false
+            "upgradePackages": true
         }
     },
 
@@ -23,7 +23,21 @@
             "settings": {
                 "cmake.generator": "Ninja",
                 "python.defaultInterpreterPath": "/usr/bin/python3",
-                "terminal.integrated.defaultProfile.linux": "zsh"
+                "terminal.integrated.defaultProfile.linux": "zsh",
+                "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+                "C_Cpp.default.includePath": [
+                    "${workspaceFolder}/**",
+                    "/opt/ros/humble/include/**",
+                    "/usr/include/**"
+                ],
+                "C_Cpp.default.browse.path": [
+                    "${workspaceFolder}/**",
+                    "/opt/ros/humble/include/**",
+                    "/usr/include/**"
+                ],
+                "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
+                "C_Cpp.default.cStandard": "c23",
+                "C_Cpp.default.cppStandard": "gnu++23"
             },
             "extensions": [
                 "ms-vscode.cpptools",
