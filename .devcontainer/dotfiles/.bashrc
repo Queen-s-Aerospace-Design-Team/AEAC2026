@@ -128,3 +128,10 @@ source /usr/share/colcon_cd/function/colcon_cd-argcomplete.bash
 source /usr/share/colcon_cd/function/colcon_cd.sh
 export _colcon_cd_root=$HOME
 source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash
+
+# argcomplete for ros2 & colcon. THESE ARE VERY NICE TO HAVE :D
+eval "$(register-python-argcomplete3 ros2)"
+eval "$(register-python-argcomplete3 colcon)"
+
+# ----- END ----- (keep some empty lines at the end of this file)
+

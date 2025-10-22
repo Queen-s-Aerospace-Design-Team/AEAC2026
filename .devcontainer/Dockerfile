@@ -30,6 +30,7 @@ RUN apt-get update \
 	gcc \
 	gdb \
 	git \
+	clang \
 	lcov \
 	libssl-dev \
 	libxml2-dev \
@@ -96,6 +97,7 @@ RUN useradd -ms /bin/bash qadt && \
 COPY dotfiles/.bashrc \
 	dotfiles/.profile \
 	dotfiles/.tmux.conf \
+	dotfiles/.zshrc \
 	entrypoint.sh \
 	./
 

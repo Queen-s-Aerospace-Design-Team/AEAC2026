@@ -1,0 +1,27 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    ipc: host
+    tty: true
+    privileged: true
+    container_name: qadt-devcontainer
+    working_dir: /home/qadt/AEAC2026
+    volumes:
+      - type: bind
+        source: ..
+        target: /home/qadt/AEAC2026
+      # Forward SSH from host -> container
+      - type: bind
+        source: ${HOME}/.ssh
+        target: /home/qadt/.ssh
+        read_only: true
+    environment:
+      QT_X11_NO_MITSHM: "1"
+      ROS_AUTOMATIC_DISCOVERY_RANGE: "LOCALHOST"
+      ROS_LOCALHOST_ONLY: "1"
+      ROS_DOMAIN_ID: "42"
+    ports:
+      - "18570:18570/udp"

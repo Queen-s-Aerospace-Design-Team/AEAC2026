@@ -2,6 +2,7 @@
 # Uses glob pattern. Ex: '*.exe' ignores all files ending with '.exe'.
 *.exe
 *.bin
+.devcontainer/compose.active.yml
 
 # Changes to folders that will be ignored by git.
 # Format: [folder_name]/
