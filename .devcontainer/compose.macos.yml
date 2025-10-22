@@ -1,0 +1,12 @@
+services:
+  dev:
+    environment:
+      # XQuartz required. In XQuartz > Preferences > Security: enable "Allow connections from network clients".
+      DISPLAY: "host.docker.internal:0"
+    # On macOS, *do not* mount /tmp/.X11-unix; TCP to XQuartz is the reliable path.
+    # GPU acceleration for Gazebo is not available in Docker on macOS; expect software rendering.
+
+    # On macOS, install XQuartz then run the following:
+    # xhost + 127.0.0.1
+    # This lets the container connect over TCP via host.docker.internal:0
+

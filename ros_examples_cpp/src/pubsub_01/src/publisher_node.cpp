@@ -32,7 +32,7 @@ public:
         };
 
         m_timer = create_wall_timer(std::chrono::milliseconds(250), timer_callback);
-        m_publisher = create_publisher<std_msgs::msg::String>("topic", 10);
+        m_publisher = create_publisher<std_msgs::msg::String>("pubsub_01_msg", 10);
     }
 
 private:

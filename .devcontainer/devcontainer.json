@@ -1,0 +1,45 @@
+{
+    "name": "QADT Dev Container (PX4)",
+    
+    "dockerComposeFile": [
+        "compose.base.yml",
+        "compose.active.yml"
+    ],
+    
+    "service": "dev",
+    "workspaceFolder": "/home/qadt/AEAC2026",
+    "remoteUser": "qadt",
+    "overrideCommand": true,
+
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "configureZshAsDefaultShell": false, // zsh terminal style will exist, but will only use bash
+            "upgradePackages": false
+        }
+    },
+
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "cmake.generator": "Ninja",
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                "terminal.integrated.defaultProfile.linux": "zsh"
+            },
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-themes",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cmake-tools",
+                "josetr.cmake-language-support-vscode",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "redhat.vscode-xml",
+                "eamodio.gitlens"
+            ]
+        }
+    },
+
+    "postCreateCommand": "/bin/bash -lc 'echo Dev container ready for ROS $ROS_DISTRO under profile $PROFILE'",
+
+    "initializeCommand": ["bash", "-lc", ".devcontainer/select_profile.sh"]
+}
