@@ -1,7 +1,6 @@
 services:
   dev:
     environment:
-      # WSLg exports these in your WSL shell; pass them through to the container.
       DISPLAY: "${DISPLAY}"
       WAYLAND_DISPLAY: "${WAYLAND_DISPLAY}"
       XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR}"
@@ -9,5 +8,4 @@ services:
     volumes:
       - "/tmp/.X11-unix:/tmp/.X11-unix"
       - "${XDG_RUNTIME_DIR}:${XDG_RUNTIME_DIR}"
-      # WSLg audio/video paths (exist on WSLg)
-      - "/mnt/wslg:/mnt/wslg"
+      - "/mnt/wslg:/mnt/wslg:ro" # WSLg audio/video paths (exist on WSLg)

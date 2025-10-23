@@ -1,9 +1,10 @@
 services:
   dev:
+    platform: linux/arm64
     environment:
       DISPLAY: "docker.for.mac.host.internal:0" # Where XQuartz listens to X11
 
-    # On macOS, install XQuartz then run the following:
+    # On macOS, install XQuartz with 'brew install XQuartz' then run the following:
     # xhost +localhost
     # This lets the container connect over TCP via host.docker.internal:0
 

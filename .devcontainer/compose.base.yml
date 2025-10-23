@@ -3,10 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    init: true
-    ipc: host
     tty: true
     privileged: true
+    stdin_open: true
     container_name: qadt-devcontainer
     working_dir: /home/qadt/AEAC2026
     volumes:
