@@ -1,8 +1,7 @@
 services:
   dev:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/queen-s-aerospace-design-team/devcontainer-px4:latest
+    pull_policy: always
     tty: true
     privileged: true
     stdin_open: true
