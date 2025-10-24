@@ -1,11 +1,11 @@
 services:
   dev:
     environment:
-      DISPLAY: "${DISPLAY}"
+      DISPLAY: ":0"
       WAYLAND_DISPLAY: "${WAYLAND_DISPLAY}"
       XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR}"
-      PULSE_SERVER: "unix:${XDG_RUNTIME_DIR}/pulse/native"
+      PULSE_SERVER: "/mnt/wslg/PulseServer"
     volumes:
       - "/tmp/.X11-unix:/tmp/.X11-unix"
       - "${XDG_RUNTIME_DIR}:${XDG_RUNTIME_DIR}"
-      - "/mnt/wslg:/mnt/wslg:ro" # WSLg audio/video paths (exist on WSLg)
+      - "/mnt/wslg:/mnt/wslg" # WSLg audio/video paths (exist on WSLg)

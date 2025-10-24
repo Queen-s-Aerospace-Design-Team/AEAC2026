@@ -13,7 +13,7 @@
 
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
-            "configureZshAsDefaultShell": false, // zsh terminal style will exist, but will only use bash
+            "configureZshAsDefaultShell": true, // zsh terminal style will exist, but will only use bash
             "upgradePackages": true
         }
     },
