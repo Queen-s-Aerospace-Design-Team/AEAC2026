@@ -7,7 +7,7 @@
     ],
     
     "service": "dev",
-    "workspaceFolder": "/home/qadt/AEAC2026",
+    "workspaceFolder": "/home/qadt/${localWorkspaceFolderBasename}",
     "remoteUser": "qadt",
     "overrideCommand": true,
 
