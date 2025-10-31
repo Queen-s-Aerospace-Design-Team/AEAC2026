@@ -51,11 +51,44 @@ linux() {
     fi
 }
 
+macos() {
+    echo "Configuring macOS for container GUIs..."
+
+    # 1) Ensure Homebrew
+    if ! command -v brew >/dev/null 2>&1; then
+        echo "Homebrew is required. Install from https://brew.sh and re-run."
+        exit 1
+    fi
+
+    # 2) Install XQuartz if missing
+    if ! [ -d "/Applications/Utilities/XQuartz.app" ]; then
+        echo "Installing XQuartz..."
+        brew install --cask xquartz
+    fi
+
+    # 3) Enable indirect GLX + allow network clients
+    defaults write org.xquartz.X11 enable_iglx -bool true
+    defaults write org.xquartz.X11 nolisten_tcp -bool false
+
+    # 4) Start XQuartz if it isn't already running
+    if ! pgrep -x XQuartz >/dev/null; then
+        open -a XQuartz
+        sleep 2 # brief wait so DISPLAY :0 comes up
+    fi
+
+    # 5) Allow localhost TCP connections
+    xhost +localhost >/dev/null
+
+    echo "XQuartz is ready."
+}
+
 # --- Main execution flow ---
 general
 
 if [ "$PROFILE" = "linux" ]; then
     linux
+elif [ "$PROFILE" = "macos" ]; then
+    macos
 fi
 
 # --- Activate Docker Compose profile ---

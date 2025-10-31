@@ -53,7 +53,5 @@
         }
     },
 
-    "postCreateCommand": "/bin/bash -lc 'echo Dev container ready for ROS $ROS_DISTRO under profile $PROFILE'",
-
     "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"]
 }

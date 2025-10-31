@@ -3,6 +3,10 @@ services:
     platform: linux/arm64
     environment:
       DISPLAY: "docker.for.mac.host.internal:0" # Where XQuartz listens to X11
+      LIBGL_ALWAYS_INDIRECT: "1"
+      MESA_LOADER_DRIVER_OVERRIDE: "swrast"
+      QT_X11_NO_MITSHM: "1"
+      QT_QPA_PLATFORM: "xcb"
 
     # On macOS, install XQuartz with 'brew install XQuartz' then run the following:
     # xhost +localhost
