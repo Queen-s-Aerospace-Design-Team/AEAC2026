@@ -10,3 +10,4 @@
 install/
 build/
 log/
+ros_examples_cpp/
