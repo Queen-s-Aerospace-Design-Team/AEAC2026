@@ -374,6 +374,8 @@ When opening VSCode, you should see a prompt asking to **Reopen in Container**, 
 
 After accepting the prompt the docker image will begin downloading. The entire process of opening the container should take 10 $-$ 15 minutes.
 
+After the container is open. **RESTART YOUR COMPUTER** to configure XQuartz (an application I installed onto your computer as part of the `initialize.sh` script). After this, it should be good to go.. 
+
 ### Troubleshooting
 
 - If Docker isn’t responding, quit and restart Docker Desktop.
