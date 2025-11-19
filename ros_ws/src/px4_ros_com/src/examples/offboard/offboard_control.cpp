@@ -90,7 +90,7 @@ class OffboardControl : public rclcpp::Node
         timer_ = this->create_wall_timer( 100ms, timer_callback );
     }
 
-    ~OffboardControl() override = default;
+    ~OffboardControl() override { RCLCPP_INFO( this->get_logger(), "OffboardControl destructor called." ); }
 
     void arm();
     void disarm();
@@ -155,11 +155,11 @@ void OffboardControl::publish_offboard_control_mode()
 void OffboardControl::publish_trajectory_setpoint()
 {
     TrajectorySetpoint msg{};
-    msg.position  = { 0.0, 0.0, -10.0 };
-    msg.velocity  = { 0.0f, 0.0f, -1.0f };
+    msg.position  = { 0.0, 0.0, -5.0 }; // Position 0, 0, and 10m in the world
+    msg.velocity  = { 5.0f, 5.0f, -1.0f };
     msg.yaw       = -2 * PI; // [-PI:PI]
     msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
-    msg.yawspeed  = 2;
+    msg.yawspeed  = (1/2) * PI;
     trajectory_setpoint_publisher_->publish( msg );
 }
 
