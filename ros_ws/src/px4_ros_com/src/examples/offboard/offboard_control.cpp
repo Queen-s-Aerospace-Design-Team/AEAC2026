@@ -51,6 +51,8 @@ using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace px4_msgs::msg;
 
+#define PI 3.14159f
+
 class OffboardControl : public rclcpp::Node
 {
   public:
@@ -87,6 +89,8 @@ class OffboardControl : public rclcpp::Node
         };
         timer_ = this->create_wall_timer( 100ms, timer_callback );
     }
+
+    ~OffboardControl() override = default;
 
     void arm();
     void disarm();
@@ -151,9 +155,11 @@ void OffboardControl::publish_offboard_control_mode()
 void OffboardControl::publish_trajectory_setpoint()
 {
     TrajectorySetpoint msg{};
-    msg.position  = { 0.0, 0.0, -5.0 };
-    msg.yaw       = -3.14; // [-PI:PI]
+    msg.position  = { 0.0, 0.0, -10.0 };
+    msg.velocity  = { 0.0f, 0.0f, -1.0f };
+    msg.yaw       = -2 * PI; // [-PI:PI]
     msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+    msg.yawspeed  = 2;
     trajectory_setpoint_publisher_->publish( msg );
 }
 
