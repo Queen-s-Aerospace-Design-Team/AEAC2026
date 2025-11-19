@@ -159,7 +159,7 @@ void OffboardControl::publish_trajectory_setpoint()
     msg.velocity  = { 5.0f, 5.0f, -1.0f };
     msg.yaw       = -2 * PI; // [-PI:PI]
     msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
-    msg.yawspeed  = (1/2) * PI;
+    msg.yawspeed  = ( 1 / 2 ) * PI;
     trajectory_setpoint_publisher_->publish( msg );
 }
 
