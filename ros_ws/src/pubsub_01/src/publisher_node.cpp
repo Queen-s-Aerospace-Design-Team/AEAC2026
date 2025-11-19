@@ -17,9 +17,7 @@ namespace
 class Publisher : public rclcpp::Node
 {
   public:
-    Publisher()
-        : Node( "publisher" )
-        , m_count( 0 )
+    Publisher() : Node( "publisher" ), m_count( 0 )
     {
         auto timer_callback = [this]() -> void
         {

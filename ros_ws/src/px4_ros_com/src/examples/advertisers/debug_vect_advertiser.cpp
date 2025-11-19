@@ -46,8 +46,7 @@ using namespace std::chrono_literals;
 class DebugVectAdvertiser : public rclcpp::Node
 {
   public:
-    DebugVectAdvertiser()
-        : Node( "debug_vect_advertiser" )
+    DebugVectAdvertiser() : Node( "debug_vect_advertiser" )
     {
 
         publisher_ = this->create_publisher<px4_msgs::msg::DebugVect>( "/fmu/in/debug_vect", 10 );

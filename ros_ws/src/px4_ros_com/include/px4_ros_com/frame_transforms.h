@@ -148,20 +148,20 @@ namespace px4_ros_com
                 /**
                  * @brief Convert covariance matrix to float[n]
                  */
-                template <class T, std::size_t SIZE>
+                template<class T, std::size_t SIZE>
                 void covariance_to_array( const T& cov, std::array<float, SIZE>& covmsg );
 
                 /**
                  * @brief Convert upper right triangular of a covariance matrix to float[n] array
                  */
-                template <class T, std::size_t ARR_SIZE>
+                template<class T, std::size_t ARR_SIZE>
                 void covariance_urt_to_array( const T& covmap, std::array<float, ARR_SIZE>& covmsg );
 
                 /**
                  * @brief Convert float[n] array (upper right triangular of a covariance matrix)
                  * to Eigen::MatrixXd<n,n> full covariance matrix
                  */
-                template <class T, std::size_t ARR_SIZE>
+                template<class T, std::size_t ARR_SIZE>
                 void array_urt_to_covariance_matrix( const std::array<float, ARR_SIZE>& covmsg, T& covmat );
 
             } // namespace types
@@ -274,7 +274,7 @@ namespace px4_ros_com
          * @brief Transform from orientation represented WRT NED frame to orientation
          * represented WRT ENU frame
          */
-        template <class T>
+        template<class T>
         inline T ned_to_enu_orientation( const T& in )
         {
             return transform_orientation( in, StaticTF::NED_TO_ENU );
@@ -284,7 +284,7 @@ namespace px4_ros_com
          * @brief Transform from orientation represented WRT ENU frame to orientation
          * represented WRT NED frame
          */
-        template <class T>
+        template<class T>
         inline T enu_to_ned_orientation( const T& in )
         {
             return transform_orientation( in, StaticTF::ENU_TO_NED );
@@ -294,7 +294,7 @@ namespace px4_ros_com
          * @brief Transform from orientation represented WRT aircraft body frame to
          * orientation represented WRT base_link body frame
          */
-        template <class T>
+        template<class T>
         inline T aircraft_to_baselink_orientation( const T& in )
         {
             return transform_orientation( in, StaticTF::AIRCRAFT_TO_BASELINK );
@@ -304,7 +304,7 @@ namespace px4_ros_com
          * @brief Transform from orientation represented WRT base_link body frame to
          * orientation represented WRT aircraft body frame
          */
-        template <class T>
+        template<class T>
         inline T baselink_to_aircraft_orientation( const T& in )
         {
             return transform_orientation( in, StaticTF::BASELINK_TO_AIRCRAFT );
@@ -319,7 +319,7 @@ namespace px4_ros_com
          * 1. aircraft to NED is converted to aircraft to ENU (NED_to_ENU conversion)
          * 2. aircraft to ENU is converted to baselink to ENU (baselink_to_aircraft conversion)
          */
-        template <class T>
+        template<class T>
         inline T px4_to_ros_orientation( const T& in )
         {
             return baselink_to_aircraft_orientation( ned_to_enu_orientation( in ) );
@@ -334,7 +334,7 @@ namespace px4_ros_com
          * 1. baselink to ENU is converted to baselink to NED (ENU_to_NED conversion)
          * 2. baselink to NED is converted to aircraft to NED (aircraft_to_baselink conversion)
          */
-        template <class T>
+        template<class T>
         inline T ros_to_px4_orientation( const T& in )
         {
             return aircraft_to_baselink_orientation( enu_to_ned_orientation( in ) );
@@ -343,7 +343,7 @@ namespace px4_ros_com
         /**
          * @brief Transform data expressed in NED to ENU local frame.
          */
-        template <class T>
+        template<class T>
         inline T ned_to_enu_local_frame( const T& in )
         {
             return transform_static_frame( in, StaticTF::NED_TO_ENU );
@@ -352,7 +352,7 @@ namespace px4_ros_com
         /**
          * @brief Transform data expressed in ENU to NED frame.
          */
-        template <class T>
+        template<class T>
         inline T enu_to_ned_local_frame( const T& in )
         {
             return transform_static_frame( in, StaticTF::ENU_TO_NED );
@@ -361,7 +361,7 @@ namespace px4_ros_com
         /**
          * @brief Transform data expressed in aircraft body frame to base_link body frame.
          */
-        template <class T>
+        template<class T>
         inline T aircraft_to_baselink_body_frame( const T& in )
         {
             return transform_static_frame( in, StaticTF::AIRCRAFT_TO_BASELINK );
@@ -370,7 +370,7 @@ namespace px4_ros_com
         /**
          * @brief Transform data expressed in base_link body frame to aircraft body frame.
          */
-        template <class T>
+        template<class T>
         inline T baselink_to_aircraft_body_frame( const T& in )
         {
             return transform_static_frame( in, StaticTF::BASELINK_TO_AIRCRAFT );
@@ -383,7 +383,7 @@ namespace px4_ros_com
          * @param map_origin  geodetic origin [lla]
          * @returns local ENU coordinates [m].
          */
-        template <class T>
+        template<class T>
         inline T ecef_to_enu_local_frame( const T& in, const T& map_origin )
         {
             return transform_static_frame( in, map_origin, StaticTF::ECEF_TO_ENU );
@@ -396,7 +396,7 @@ namespace px4_ros_com
          * @param map_origin  geodetic origin [lla]
          * @returns local ECEF coordinates [m].
          */
-        template <class T>
+        template<class T>
         inline T enu_to_ecef_local_frame( const T& in, const T& map_origin )
         {
             return transform_static_frame( in, map_origin, StaticTF::ENU_TO_ECEF );
@@ -406,7 +406,7 @@ namespace px4_ros_com
          * @brief Transform data expressed in aircraft frame to NED frame.
          * Assumes quaternion represents rotation from aircraft frame to NED frame.
          */
-        template <class T>
+        template<class T>
         inline T aircraft_to_ned_frame( const T& in, const Eigen::Quaterniond& q )
         {
             return transform_frame( in, q );
@@ -416,7 +416,7 @@ namespace px4_ros_com
          * @brief Transform data expressed in NED to aircraft frame.
          * Assumes quaternion represents rotation from NED to aircraft frame.
          */
-        template <class T>
+        template<class T>
         inline T ned_to_aircraft_frame( const T& in, const Eigen::Quaterniond& q )
         {
             return transform_frame( in, q );
@@ -426,7 +426,7 @@ namespace px4_ros_com
          * @brief Transform data expressed in aircraft frame to ENU frame.
          * Assumes quaternion represents rotation from aircraft frame to ENU frame.
          */
-        template <class T>
+        template<class T>
         inline T aircraft_to_enu_frame( const T& in, const Eigen::Quaterniond& q )
         {
             return transform_frame( in, q );
@@ -436,7 +436,7 @@ namespace px4_ros_com
          * @brief Transform data expressed in ENU to aircraft frame.
          * Assumes quaternion represents rotation from ENU to aircraft frame.
          */
-        template <class T>
+        template<class T>
         inline T enu_to_aircraft_frame( const T& in, const Eigen::Quaterniond& q )
         {
             return transform_frame( in, q );
@@ -446,7 +446,7 @@ namespace px4_ros_com
          * @brief Transform data expressed in baselink to ENU frame.
          * Assumes quaternion represents rotation from basel_link to ENU frame.
          */
-        template <class T>
+        template<class T>
         inline T baselink_to_enu_frame( const T& in, const Eigen::Quaterniond& q )
         {
             return transform_frame( in, q );
@@ -456,7 +456,7 @@ namespace px4_ros_com
          * @brief Transform data expressed in ENU to base_link frame.
          * Assumes quaternion represents rotation from ENU to base_link frame.
          */
-        template <class T>
+        template<class T>
         inline T enu_to_baselink_frame( const T& in, const Eigen::Quaterniond& q )
         {
             return transform_frame( in, q );

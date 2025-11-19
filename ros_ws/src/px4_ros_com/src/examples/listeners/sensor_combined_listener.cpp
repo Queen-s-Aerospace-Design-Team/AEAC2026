@@ -48,8 +48,7 @@
 class SensorCombinedListener : public rclcpp::Node
 {
   public:
-    explicit SensorCombinedListener()
-        : Node( "sensor_combined_listener" )
+    explicit SensorCombinedListener() : Node( "sensor_combined_listener" )
     {
         rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
         auto qos                      = rclcpp::QoS( rclcpp::QoSInitialization( qos_profile.history, 5 ), qos_profile );

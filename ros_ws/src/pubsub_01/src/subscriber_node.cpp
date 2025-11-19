@@ -7,8 +7,7 @@
 class Subscriber : public rclcpp::Node
 {
   public:
-    Subscriber()
-        : Node( "subscriber" )
+    Subscriber() : Node( "subscriber" )
     {
         auto topic_callback = [this]( std_msgs::msg::String::UniquePtr message )
         { RCLCPP_INFO( get_logger(), "Received Message: %s", message->data.c_str() ); };

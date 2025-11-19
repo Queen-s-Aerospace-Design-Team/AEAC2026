@@ -110,13 +110,13 @@ namespace px4_ros_com
             namespace types
             {
 
-                template <class T, std::size_t SIZE>
+                template<class T, std::size_t SIZE>
                 void covariance_to_array( const T& cov, std::array<float, SIZE>& covmsg )
                 {
                     std::copy( cov.cbegin(), cov.cend(), covmsg.begin() );
                 }
 
-                template <class T, std::size_t ARR_SIZE>
+                template<class T, std::size_t ARR_SIZE>
                 void covariance_urt_to_array( const T& covmap, std::array<float, ARR_SIZE>& covmsg )
                 {
                     auto m               = covmap;
@@ -134,7 +134,7 @@ namespace px4_ros_com
                     }
                 }
 
-                template <class T, std::size_t ARR_SIZE>
+                template<class T, std::size_t ARR_SIZE>
                 void array_urt_to_covariance_matrix( const std::array<float, ARR_SIZE>& covmsg, T& covmat )
                 {
                     std::size_t COV_SIZE = covmat.rows() * ( covmat.rows() + 1 ) / 2;

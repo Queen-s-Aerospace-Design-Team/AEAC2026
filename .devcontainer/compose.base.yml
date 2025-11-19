@@ -6,6 +6,7 @@ services:
     privileged: true
     stdin_open: true
     container_name: qadt-devcontainer
+    network_mode: "host"
     volumes:
       - type: bind
         source: ..
@@ -21,5 +22,3 @@ services:
       # ROS_AUTOMATIC_DISCOVERY_RANGE: "LOCALHOST"
       # ROS_LOCALHOST_ONLY: "1"
       # ROS_DOMAIN_ID: "42"
-    ports:
-      - "18570:18570/udp"

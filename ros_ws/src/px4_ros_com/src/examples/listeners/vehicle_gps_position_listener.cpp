@@ -46,8 +46,7 @@
 class VehicleGpsPositionListener : public rclcpp::Node
 {
   public:
-    explicit VehicleGpsPositionListener()
-        : Node( "vehicle_global_position_listener" )
+    explicit VehicleGpsPositionListener() : Node( "vehicle_global_position_listener" )
     {
         rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
         auto qos                      = rclcpp::QoS( rclcpp::QoSInitialization( qos_profile.history, 5 ), qos_profile );
