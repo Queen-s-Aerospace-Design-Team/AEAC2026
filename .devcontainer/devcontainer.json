@@ -1,11 +1,11 @@
 {
     "name": "QADT Dev Container (PX4)",
-    
+
     "dockerComposeFile": [
         "compose.base.yml",
         "compose.active.yml"
     ],
-    
+
     "service": "dev",
     "workspaceFolder": "/home/qadt/${localWorkspaceFolderBasename}",
     "remoteUser": "qadt",
@@ -37,7 +37,12 @@
                 ],
                 "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
                 "C_Cpp.default.cStandard": "c23",
-                "C_Cpp.default.cppStandard": "gnu++23"
+                "C_Cpp.default.cppStandard": "gnu++23",
+
+                // ---- Added for .clang-format support ----
+                "editor.defaultFormatter": "xaver.clang-format",
+                "editor.formatOnSave": true,
+                "C_Cpp.formatting": "clangFormat"
             },
             "extensions": [
                 "ms-vscode.cpptools",
@@ -48,10 +53,12 @@
                 "ms-python.python",
                 "ms-python.vscode-pylance",
                 "redhat.vscode-xml",
-                "eamodio.gitlens"
+                "eamodio.gitlens",
+                "xaver.clang-format"
             ]
         }
     },
 
-    "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"]
+    "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"],
+    "postStartCommand": ["bash", "-lc", "sudo apt update && sudo apt install clang-format -y"]
 }
