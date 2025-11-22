@@ -53,20 +53,17 @@ using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace px4_msgs::msg;
 
-class OffboardControl : public rclcpp::Node
+class PX4Example : public rclcpp::Node
 {
   public:
-    OffboardControl( std::string px4_namespace )
+    PX4Example( std::string px4_namespace )
         : Node( "offboard_control_srv" )
         , state_{ State::init }
         , service_result_{ 0 }
         , service_done_{ false }
-        , offboard_control_mode_publisher_{ this->create_publisher<OffboardControlMode>(
-              px4_namespace + "in/offboard_control_mode", 10 ) }
-        , trajectory_setpoint_publisher_{ this->create_publisher<TrajectorySetpoint>(
-              px4_namespace + "in/trajectory_setpoint", 10 ) }
-        , vehicle_command_client_{
-              this->create_client<px4_msgs::srv::VehicleCommand>( px4_namespace + "vehicle_command" ) }
+        , offboard_control_mode_publisher_{ this->create_publisher<OffboardControlMode>( px4_namespace + "in/offboard_control_mode", 10 ) }
+        , trajectory_setpoint_publisher_{ this->create_publisher<TrajectorySetpoint>( px4_namespace + "in/trajectory_setpoint", 10 ) }
+        , vehicle_command_client_{ this->create_client<px4_msgs::srv::VehicleCommand>( px4_namespace + "vehicle_command" ) }
     {
         RCLCPP_INFO( this->get_logger(), "Starting Offboard Control example with PX4 services" );
         RCLCPP_INFO_STREAM( this->get_logger(), "Waiting for " << px4_namespace << "vehicle_command service" );
@@ -82,7 +79,7 @@ class OffboardControl : public rclcpp::Node
 
 
         printf( "Hello World: %d", (int)1 );
-        timer_ = this->create_wall_timer( 100ms, std::bind( &OffboardControl::timer_callback, this ) );
+        timer_ = this->create_wall_timer( 100ms, std::bind( &PX4Example::timer_callback, this ) );
     }
 
     void switch_to_offboard_mode();
@@ -117,7 +114,7 @@ class OffboardControl : public rclcpp::Node
 /**
  * @brief Send a command to switch to offboard mode
  */
-void OffboardControl::switch_to_offboard_mode()
+void PX4Example::switch_to_offboard_mode()
 {
     RCLCPP_INFO( this->get_logger(), "requesting switch to Offboard mode" );
     request_vehicle_command( VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 6 );
@@ -126,7 +123,7 @@ void OffboardControl::switch_to_offboard_mode()
 /**
  * @brief Send a command to Arm the vehicle
  */
-void OffboardControl::arm()
+void PX4Example::arm()
 {
     RCLCPP_INFO( this->get_logger(), "requesting arm" );
     request_vehicle_command( VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0 );
@@ -135,7 +132,7 @@ void OffboardControl::arm()
 /**
  * @brief Send a command to Disarm the vehicle
  */
-void OffboardControl::disarm()
+void PX4Example::disarm()
 {
     RCLCPP_INFO( this->get_logger(), "requesting disarm" );
     request_vehicle_command( VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0 );
@@ -145,7 +142,7 @@ void OffboardControl::disarm()
  * @brief Publish the offboard control mode.
  *        For this example, only position and altitude controls are active.
  */
-void OffboardControl::publish_offboard_control_mode()
+void PX4Example::publish_offboard_control_mode()
 {
     OffboardControlMode msg{};
     msg.position     = true;
@@ -162,7 +159,7 @@ void OffboardControl::publish_offboard_control_mode()
  *        For this example, it sends a trajectory setpoint to make the
  *        vehicle hover at 5 meters with a yaw angle of 180 degrees.
  */
-void OffboardControl::publish_trajectory_setpoint()
+void PX4Example::publish_trajectory_setpoint()
 {
     TrajectorySetpoint msg{};
     msg.position  = { 0.0, 0.0, -5.0 };
@@ -177,7 +174,7 @@ void OffboardControl::publish_trajectory_setpoint()
  * @param param1    Command parameter 1
  * @param param2    Command parameter 2
  */
-void OffboardControl::request_vehicle_command( uint16_t command, float param1, float param2 )
+void PX4Example::request_vehicle_command( uint16_t command, float param1, float param2 )
 {
     auto request = std::make_shared<px4_msgs::srv::VehicleCommand::Request>();
 
@@ -194,12 +191,12 @@ void OffboardControl::request_vehicle_command( uint16_t command, float param1, f
     request->request     = msg;
 
     service_done_ = false;
-    auto result   = vehicle_command_client_->async_send_request(
-          request, std::bind( &OffboardControl::response_callback, this, std::placeholders::_1 ) );
+    auto result =
+        vehicle_command_client_->async_send_request( request, std::bind( &PX4Example::response_callback, this, std::placeholders::_1 ) );
     RCLCPP_INFO( this->get_logger(), "Command send" );
 }
 
-void OffboardControl::timer_callback( void )
+void PX4Example::timer_callback( void )
 {
     static uint8_t num_of_steps = 0;
 
@@ -255,7 +252,7 @@ void OffboardControl::timer_callback( void )
     }
 }
 
-void OffboardControl::response_callback( rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedFuture future )
+void PX4Example::response_callback( rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedFuture future )
 {
     auto status = future.wait_for( 1s );
     if( status == std::future_status::ready )
@@ -301,7 +298,7 @@ int main( int argc, char* argv[] )
 {
     setvbuf( stdout, NULL, _IONBF, BUFSIZ );
     rclcpp::init( argc, argv );
-    rclcpp::spin( std::make_shared<OffboardControl>( "/fmu/" ) );
+    rclcpp::spin( std::make_shared<PX4Example>( "/fmu/" ) );
 
     rclcpp::shutdown();
     return 0;

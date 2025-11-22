@@ -9,6 +9,23 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>eigen3_cmake_module</buildtool_depend>
+
+  <build_depend>eigen</build_depend>
+  <build_depend>ros_environment</build_depend>
+
+  <depend>builtin_interfaces</depend>
+  <depend>rclcpp</depend>
+
+  <depend>px4_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+  <depend>launch</depend>
+  <depend>launch_testing</depend>
+  <depend>launch_testing_ros</depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

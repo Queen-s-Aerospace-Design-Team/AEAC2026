@@ -25,8 +25,8 @@ linux() {
             echo "🔧 Installing NVIDIA Container Toolkit..."
 
             # Ensure prerequisites are available
-            sudo apt-get update -y
-            sudo apt-get install -y --no-install-recommends curl gnupg2 ca-certificates
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends curl gnupg2 ca-certificates -y
 
             # Add NVIDIA repository and GPG key
             curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
@@ -35,8 +35,8 @@ linux() {
                 | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#' \
                 | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null
 
-            sudo apt-get update -y
-            sudo apt-get install -y nvidia-container-toolkit
+            sudo apt-get update
+            sudo apt-get install nvidia-container-toolkit -y
 
             echo "Configuring Docker to use NVIDIA runtime..."
             sudo nvidia-ctk runtime configure --runtime=docker
