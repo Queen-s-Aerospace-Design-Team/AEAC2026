@@ -1,5 +1,6 @@
 services:
   dev:
+    network_mode: "host"
     environment:
       DISPLAY: "${DISPLAY}"
       XAUTHORITY: "/home/qadt/.Xauthority"

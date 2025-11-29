@@ -6,7 +6,6 @@ services:
     privileged: true
     stdin_open: true
     container_name: qadt-devcontainer
-    network_mode: "host"
     volumes:
       - type: bind
         source: ..
