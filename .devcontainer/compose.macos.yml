@@ -1,6 +1,7 @@
 services:
   dev:
-    platform: linux/arm64
+    platform: linux/arm64 # Optional
+    network_mode: "host"
     environment:
       DISPLAY: "docker.for.mac.host.internal:0" # Where XQuartz listens to X11
       LIBGL_ALWAYS_INDIRECT: "1"

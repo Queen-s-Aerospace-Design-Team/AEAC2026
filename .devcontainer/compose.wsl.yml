@@ -9,3 +9,9 @@ services:
       - "/tmp/.X11-unix:/tmp/.X11-unix"
       - "${XDG_RUNTIME_DIR}:${XDG_RUNTIME_DIR}"
       - "/mnt/wslg:/mnt/wslg" # WSLg audio/video paths (exist on WSLg)
+    ports:
+      - "18570:18570/udp" # WSL requires port 18570 to be forwarded.
+
+# For WSL, make sure that QGC is connected to port 18570 by making a new comms link. 
+# Under IP address, run the command `ip addr | grep eth0` into a WSL terminal. 
+# Enter the output IP address into address field in QGC.

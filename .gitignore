@@ -3,6 +3,7 @@
 *.exe
 *.bin
 .devcontainer/compose.active.yml
+.DS_Store
 
 # Changes to folders that will be ignored by git.
 # Format: [folder_name]/
