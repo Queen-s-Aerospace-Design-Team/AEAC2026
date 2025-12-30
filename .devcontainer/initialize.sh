@@ -19,6 +19,7 @@ linux() {
 
     if command -v nvidia-smi &>/dev/null; then
         echo "NVIDIA driver found."
+        PROFILE+="-NVIDIA" # Profile is now NVIDIA
 
         # Check if nvidia-container-toolkit is already installed
         if ! dpkg -s nvidia-container-toolkit &>/dev/null; then
@@ -48,6 +49,13 @@ linux() {
 
     else
         echo "NVIDIA driver not found. Skipping GPU setup."
+        PROFILE+="-nonNVIDIA" # Profile is now nonNVIDIA
+
+        if [ -e /dev/dri/renderD128 ]; then
+            echo "DRM GPU device found (Intel/AMD). Hardware acceleration available."
+        else
+            echo "No DRM GPU device found. Hardware acceleration unavailable."
+        fi
     fi
 }
 

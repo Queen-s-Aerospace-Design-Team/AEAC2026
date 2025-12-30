@@ -1,5 +1,7 @@
 services:
   dev:
+    gpus: all
+    runtime: nvidia # NEEDED TO RUN GPU APPS
     network_mode: "host"
     environment:
       DISPLAY: "${DISPLAY}"
@@ -11,9 +13,6 @@ services:
       - "/tmp/.X11-unix:/tmp/.X11-unix"             # fastest, unix socket
       - "${XDG_RUNTIME_DIR}:${XDG_RUNTIME_DIR}"
       - "${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native"
-      - "/dev/dri:/dev/dri:ro"
-    gpus: all
-    runtime: nvidia # NEEDED TO RUN GPU APPS
-
+      
 # All prerequistes to use the nivida container toolkit are under the `initialize.sh` script ran upon entering the container.
 
