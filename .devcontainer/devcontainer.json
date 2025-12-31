@@ -59,6 +59,5 @@
         }
     },
 
-    "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"],
-    "postStartCommand": ["bash", "-lc", "sudo apt update && sudo apt install clang-format -y"]
+    "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"]
 }
