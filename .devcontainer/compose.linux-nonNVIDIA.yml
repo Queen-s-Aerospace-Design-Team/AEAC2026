@@ -4,14 +4,14 @@ services:
     environment:
       DISPLAY: "${DISPLAY}"
       XAUTHORITY: "/home/qadt/.Xauthority"
-      PULSE_SERVER: "unix:${XDG_RUNTIME_DIR}/pulse/native"
+      WAYLAND_DISPLAY: "${WAYLAND_DISPLAY}"
       XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR}"
+      GDK_BACKEND: wayland,x11
+      QT_QPA_PLATFORM: wayland;xcb
     volumes:
       - "${HOME}/.Xauthority:/home/qadt/.Xauthority:ro"
-      - "/tmp/.X11-unix:/tmp/.X11-unix"             # fastest, unix socket
-      - "${XDG_RUNTIME_DIR}:${XDG_RUNTIME_DIR}"
-      - "${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native"
+      - "/tmp/.X11-unix:/tmp/.X11-unix" # fastest, unix socket
+      - "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}:${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
     devices:
-      - "/dev/dri/renderD128:/dev/dri/renderD128"   # Render-only DRM node (safe GPU acceleration; no display control)
-                                                    # Needed for GPU command submission from container to hardware
-
+      - "/dev/dri/renderD128:/dev/dri/renderD128" # Render-only DRM node (safe GPU acceleration; no display control)
+        # Needed for GPU command submission from container to hardware
