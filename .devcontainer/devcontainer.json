@@ -5,16 +5,16 @@
         "compose.base.yml",
         "compose.active.yml"
     ],
-
+    
     "service": "dev",
+    "overrideCommand": true,
     "workspaceFolder": "/home/qadt/${localWorkspaceFolderBasename}",
     "remoteUser": "qadt",
-    "overrideCommand": true,
 
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
             "configureZshAsDefaultShell": true, // zsh terminal style will exist, but will only use bash
-            "upgradePackages": true
+            "upgradePackages": false
         }
     },
 

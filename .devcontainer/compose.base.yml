@@ -6,6 +6,7 @@ services:
     privileged: true
     stdin_open: true
     container_name: qadt-devcontainer
+    working_dir: /home/qadt/AEAC2026
     volumes:
       - type: bind
         source: ..
