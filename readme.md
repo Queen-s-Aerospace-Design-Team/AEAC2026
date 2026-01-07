@@ -233,7 +233,7 @@ After accepting the prompt the docker image will begin downloading. The entire p
 
 ## Setup - MacOS
 
-This project is developed and built inside Docker containers running on **MacOS** with the help of VSCode's dev containers extension. We currently do not use an other VMs or containers other than what is developed in-house and used inside of VSCode's dev containers extension.
+*This project is developed and built inside Docker containers running on **MacOS** with the help of VSCode's dev containers extension. We currently do not use an other VMs or containers other than what is developed in-house and used inside of VSCode's dev containers extension.*
 
 The development workflow is:
 
@@ -306,7 +306,7 @@ This will print a line starting with `ssh-ed25519`. **Copy that entire line.**
 Then:
 
 1. Go to Go to your GitHub profile &rarr; **Settings** &rarr; **SSH and GPG Keys** &rarr; **New SSH Key**
-2. Give it a recognizable title (e.g. “WSL Laptop”)
+2. Give it a recognizable title (e.g. “Mac Laptop”)
 3. Paste your key into the **Key** field
 4. Click **Add SSH key**
 
@@ -384,23 +384,112 @@ After the container is open. **RESTART YOUR COMPUTER** to configure XQuartz (an 
 
 ## Setup - Native Linux
 
-**TODO**
+*This project is developed and built inside Docker containers running on **Linux** with the help of VSCode's dev containers extension. Currently, the only linux distro this setup has been verified and tested on is **Ubuntu**.*
+
+For installing Linux-Ubuntu, you can use either **22.04 or 24.04** as all development happens inside of a container. I recommend that you choose a minimal installation of Ubuntu when prompted when first installing from USB media. If installing alongside windows (i.e. Dual Boot), make sure to select **Install alongside Windows Boot Manager** - it the easiest this way. As with all Linux setup, you will have to select a PC name, username, and password. For a PC, I perfer the form `[firstName]-Ubuntu` (`anthony-Ubuntu`), and for username I prefer `[firstInitial][lastName]` (`abotticchio`) and choose an easy to type password.
+
+The development workflow is:
+
+1. **Open development container inside of VSCode.**
+2. **Build and run code inside of said development container**
+3. **Use Git on Linux** for source control.
+
+*There is no use of Docker Desktop on Linux machines. Instead, Docker recommends to use its own docker engine (no GUI).*
+
+Generally, its a good idea to run `sudo apt upgrade after installing a new OS:
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+### Install Git
+
+For Linux-Ubuntu, we’ll use its package manager **apt**, the package manager for Ubuntu distros, to install Git and other development tools.
+
+To install Git, press the windows key and type in **terminal** into the search bar to open the terminal application. Enter the following:
+
+```bash
+sudo apt update && sudo apt install git -y
+```
+
+### Make an SSH Key
+
+First, generate a new SSH key pair:
+
+```bash
+ssh-keygen
+```
+
+When prompted to **"Enter a file in which to save the key",** just press Enter (3 times) to accept the default path:
+
+```bash
+~/.ssh/id_ed25519
+```
+
+Now, let’s copy your **public key** so you can add it to GitHub. Run:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+This will print a line starting with `ssh-ed25519`. **Copy that entire line.**
+
+Then:
+
+1. Go to Go to your GitHub profile &rarr; **Settings** &rarr; **SSH and GPG Keys** &rarr; **New SSH Key**
+2. Give it a recognizable title (e.g. “Ubuntu Laptop”)
+3. Paste your key into the **Key** field
+4. Click **Add SSH key**
+
+Finally, test your connection to GitHub:
+
+```bash
+ssh -T git@github.com
+```
+
+You should see:
+
+```bash
+Hi [username]! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+If you see this, then you're good to go!
+
+
+### Clone the Repository
+
+First navigate to your home directory with `cd` or `cd ~` (using `cd` allows you to navigate directories, i.e `cd ~`), and make a `git` directory using `mkdir git` (using `mkdir` allows you to make directories, i.e `mkdir git`).
+
+Then navigate into your git directory (`cd ~/git`) and clone the repo using SSH with `git clone <ssh_url>`. Your commands should look like this bellow:
+
+```bash
+cd ~
+mkdir git
+cd git
+git clone git@github.com:Queen-s-Aerospace-Design-Team/AEAC2026.git
+```
+
+If you’re cloning via SSH for the first time, you’ll be asked to confirm the connection — type **Yes** when prompted.
+
+### Run the setupLinux.sh script
+
+Inside the AEAC2026 repo, navigate to the scripts directory and run the `setupLinux.sh` script. This will install all required software on Linux machines including Docker, VSCode and its necessary extensions, and QGroundControl.
+
+```bash
+cd ~/git/AEAC2026/scripts
+./setupLinux.sh
+```
+
+Next, reboot your computer and open VSCode in the repo with:
+
+```bash
+cd ~/git/AEAC2026
+code .
+```
 
 ---
 
 # Other
-
-## Running ROS examples
-
-Navigate to the `ros_examples_cpp` and enter the command:
-
-```bash
-colcon build && source install/setup.sh
-```
-
-To build all packages under the `AEAC2026/ros_examples_cpp/src` directory. Then run `ros2 run [pkg_name] [executable_name]`. For example, in one terminal instance run, `ros2 run pubsub_01 publisher`, and in another terminal instance run, `ros2 run pubsub_01 subscriber`.
-
-Feel free to experiment with the ROS2 examples.
 
 ## (Legacy) Building Docker Images
 
