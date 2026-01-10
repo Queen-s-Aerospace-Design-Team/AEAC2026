@@ -1,17 +1,15 @@
 services:
   dev:
     network_mode: "host"
+    user: "1000:1000"
     environment:
       DISPLAY: "${DISPLAY}"
       XAUTHORITY: "/home/qadt/.Xauthority"
-      WAYLAND_DISPLAY: "${WAYLAND_DISPLAY}"
-      XDG_RUNTIME_DIR: "${XDG_RUNTIME_DIR}"
-      GDK_BACKEND: wayland,x11
-      QT_QPA_PLATFORM: wayland;xcb
+      QT_QPA_PLATFORM: xcb # Forced x11 rendering so gazebo doesn't crash. Container version of Gazebo doesn't work with wayland
+      GDK_BACKEND: x11
     volumes:
-      - "${HOME}/.Xauthority:/home/qadt/.Xauthority:ro"
-      - "/tmp/.X11-unix:/tmp/.X11-unix" # fastest, unix socket
-      - "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}:${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
+      - "${HOME}/.Xauthority:/home/qadt/.Xauthority"
+      - "/tmp/.X11-unix:/tmp/.X11-unix:rw" # fastest, unix socket
     devices:
       - "/dev/dri/renderD128:/dev/dri/renderD128" # Render-only DRM node (safe GPU acceleration; no display control)
         # Needed for GPU command submission from container to hardware
