@@ -1,7 +1,14 @@
 #!/bin/bash
+set -e
 
-sudo apt update && sudo apt install -y \
+echo "Installing extra software..."
+
+sudo apt update >/dev/null
+sudo apt install -y \
     ros-humble-navigation2 \
-    ros-humble-nav2-bringup
+    ros-humble-nav2-bringup \
+    ros-humble-ros-ign-bridge \
+    ros-humble-ros-gzharmonic >/dev/null
 
-MicroXRCEAgent udp4 -p 8888 
+echo "Starting Micro XRCE Agent..."
+MicroXRCEAgent udp4 -p 8888
