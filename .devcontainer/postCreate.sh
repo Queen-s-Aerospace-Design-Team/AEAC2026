@@ -4,4 +4,4 @@ sudo apt update && sudo apt install -y \
     ros-humble-navigation2 \
     ros-humble-nav2-bringup
 
-MicroXRCEDDS udp4 -p 8888 & 
+MicroXRCEAgent udp4 -p 8888 
