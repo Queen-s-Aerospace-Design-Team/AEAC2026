@@ -57,6 +57,12 @@ linux() {
             echo "No DRM GPU device found. Hardware acceleration unavailable."
         fi
     fi
+
+    if [ "$XDG_SESSION_TYPE" != "x11" ]; then
+        echo "Error: This script requires X11."
+        echo "Please log out and change your rendering mode to X11, then try again."
+        exit 1
+    fi
 }
 
 macos() {

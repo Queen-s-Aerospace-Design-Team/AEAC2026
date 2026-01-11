@@ -1,11 +1,8 @@
 {
     "name": "QADT Dev Container (PX4)",
 
-    "dockerComposeFile": [
-        "compose.base.yml",
-        "compose.active.yml"
-    ],
-    
+    "dockerComposeFile": ["compose.base.yml", "compose.active.yml"],
+
     "service": "dev",
     "overrideCommand": true,
     "workspaceFolder": "/home/qadt/${localWorkspaceFolderBasename}",
@@ -25,16 +22,8 @@
                 "python.defaultInterpreterPath": "/usr/bin/python3",
                 "terminal.integrated.defaultProfile.linux": "zsh",
                 "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-                "C_Cpp.default.includePath": [
-                    "${workspaceFolder}/**",
-                    "/opt/ros/humble/include/**",
-                    "/usr/include/**"
-                ],
-                "C_Cpp.default.browse.path": [
-                    "${workspaceFolder}/**",
-                    "/opt/ros/humble/include/**",
-                    "/usr/include/**"
-                ],
+                "C_Cpp.default.includePath": ["${workspaceFolder}/**", "/opt/ros/humble/include/**", "/usr/include/**"],
+                "C_Cpp.default.browse.path": ["${workspaceFolder}/**", "/opt/ros/humble/include/**", "/usr/include/**"],
                 "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
                 "C_Cpp.default.cStandard": "c23",
                 "C_Cpp.default.cppStandard": "gnu++23",
@@ -59,5 +48,6 @@
         }
     },
 
-    "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"]
+    "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"],
+    "postCreateCommand": ["bash", "-lc", ".devcontainer/postCreate.sh"]
 }
