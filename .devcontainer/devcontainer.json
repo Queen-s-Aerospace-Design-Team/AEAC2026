@@ -49,5 +49,5 @@
     },
 
     "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"],
-    "postCreateCommand": ["bash", "-lc", ".devcontainer/postCreate.sh"]
+    "postStartCommand": ["bash", "-lc", ".devcontainer/postStart.sh"]
 }
