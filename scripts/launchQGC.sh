@@ -1,10 +1,13 @@
 #!/bin/bash
 
-if [[ "$(uname)" != "Linux" ]]; then
-    exit 0
+ARCH=$(uname -m)
+OS=$(uname -s)
+
+if [[ "$OS" != "Linux" ]]; then
+    echo "Unsupported operating system: $OS"
+    exit 1
 fi
 
-ARCH=$(uname -m)
 if [[ "$ARCH" != "x86_64" ]]; then
     echo "Unsupported architecture: $ARCH"
     exit 1
