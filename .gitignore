@@ -4,7 +4,8 @@
 *.bin
 .devcontainer/compose.active.yml
 .DS_Store
-.json
+credentials.json
+token.json
 
 # Changes to folders that will be ignored by git.
 # Format: [folder_name]/
