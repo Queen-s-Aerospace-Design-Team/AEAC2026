@@ -81,15 +81,20 @@ BRIDGE_CMD="ros2 run ros_gz_bridge parameter_bridge \
     /depth_camera@sensor_msgs/msg/Image[gz.msgs.Image \
     /camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo"
 RVIZ_CMD="sleep 5 && rviz2 -d $RVIZ_CFG --ros-args -p use_sim_time:=true"
+RQT_CMD="sleep 5 && rqt --force-discover && ros2 run rqt_image_view rqt_image_view /depth_camera"
 
-tmux new-session -d -s "$SESSION" -n px4 zsh
-tmux new-pane -t "$SESSION" -n bridge zsh
-tmux new-pane -t "$SESSION" -n rviz2 zsh
-tmux new-pane -t "$SESSION" -n extra zsh
+tmux new-session -d -s "$SESSION" -n sim zsh
 
-tmux send-keys -t "$SESSION:px4" "$PX4_CMD" C-m
-tmux send-keys -t "$SESSION:bridge" "$BRIDGE_CMD" C-m
-tmux send-keys -t "$SESSION:rviz2" "$RVIZ_CMD" C-m
+# Create a 2x2 grid of panes
+tmux split-window -t "$SESSION:sim" -h -c "#{pane_current_path}" zsh
+tmux split-window -t "$SESSION:sim.0" -v -c "#{pane_current_path}" zsh
+tmux split-window -t "$SESSION:sim.1" -v -c "#{pane_current_path}" zsh
 
-tmux select-window -t "$SESSION:px4"
+tmux send-keys -t "$SESSION:sim.0" "$PX4_CMD" C-m
+tmux send-keys -t "$SESSION:sim.1" "$BRIDGE_CMD" C-m
+tmux send-keys -t "$SESSION:sim.2" "$RVIZ_CMD" C-m
+tmux send-keys -t "$SESSION:sim.3" "$RQT_CMD" C-m
+
+tmux select-pane -t "$SESSION:sim.0"
 tmux attach -t "$SESSION"
+
