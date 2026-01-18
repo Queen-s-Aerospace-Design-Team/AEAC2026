@@ -20,7 +20,7 @@ SESSION="${TMUX_SESSION:-x500_depth_cam}"
 GZ_MODEL_NAME="x500_depth_0"
 GZ_WORLD_NAME="walls"
 PX4_TARGET="gz_x500_depth_$GZ_WORLD_NAME"
-PX4_DIR="$HOME/PX4_Autopilot"
+PX4_DIR="$HOME/PX4-Autopilot"
 FIXED_FRAME="x500_depth_0/camera_link/StereoOV7251"
 RVIZ_CFG="/tmp/x500_depth.rviz"
 
@@ -57,10 +57,6 @@ Visualization Manager:
       Name: DepthCloud
       Enabled: true
       Topic: /depth_camera/points
-    - Class: rviz_default_plugins/Image
-      Name: DepthImage
-      Enabled: true
-      Topic: /depth_camera
   Tools:
     - Class: rviz_default_plugins/Interact
     - Class: rviz_default_plugins/MoveCamera
@@ -76,12 +72,12 @@ Window Geometry:
 EOF
 
 PX4_CMD="cd ${PX4_DIR} && make px4_sitl ${PX4_TARGET}"
-BRIDGE_CMD="ros2 run ros_gz_bridge parameter_bridge \
-    /depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked \
-    /depth_camera@sensor_msgs/msg/Image[gz.msgs.Image \
-    /camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo"
-RVIZ_CMD="sleep 5 && rviz2 -d $RVIZ_CFG --ros-args -p use_sim_time:=true"
-RQT_CMD="sleep 5 && rqt --force-discover && ros2 run rqt_image_view rqt_image_view /depth_camera"
+BRIDGE_CMD="sleep 3 && ros2 run ros_gz_bridge parameter_bridge \
+    /depth_camera/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked \
+    /depth_camera@sensor_msgs/msg/Image@gz.msgs.Image \
+    /camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo"
+RVIZ_CMD="sleep 3 && rviz2 -d $RVIZ_CFG --ros-args -p use_sim_time:=true"
+RQT_CMD="sleep 3 && ros2 run rqt_image_view rqt_image_view /depth_camera"
 
 tmux new-session -d -s "$SESSION" -n sim zsh
 
@@ -89,6 +85,7 @@ tmux new-session -d -s "$SESSION" -n sim zsh
 tmux split-window -t "$SESSION:sim" -h -c "#{pane_current_path}" zsh
 tmux split-window -t "$SESSION:sim.0" -v -c "#{pane_current_path}" zsh
 tmux split-window -t "$SESSION:sim.1" -v -c "#{pane_current_path}" zsh
+tmux split-window -t "$SESSION:sim.2" -v -c "#{pane_current_path}" zsh
 
 tmux send-keys -t "$SESSION:sim.0" "$PX4_CMD" C-m
 tmux send-keys -t "$SESSION:sim.1" "$BRIDGE_CMD" C-m
