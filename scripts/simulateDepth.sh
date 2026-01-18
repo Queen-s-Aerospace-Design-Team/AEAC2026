@@ -57,6 +57,7 @@ Visualization Manager:
       Name: DepthCloud
       Enabled: true
       Topic: /depth_camera/points
+      Style: Points
   Tools:
     - Class: rviz_default_plugins/Interact
     - Class: rviz_default_plugins/MoveCamera
