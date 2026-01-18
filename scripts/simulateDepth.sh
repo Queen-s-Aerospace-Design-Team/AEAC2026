@@ -17,13 +17,12 @@
 set -euo pipefail
 
 SESSION="${TMUX_SESSION:-x500_depth_cam}"
-MODEL_NAME="x500_depth_0"
-WORLD_NAME="walls"
-PX4_TARGET="gz_x500_depth_$WORLD_NAME"
+GZ_MODEL_NAME="x500_depth_0"
+GZ_WORLD_NAME="walls"
+PX4_TARGET="gz_x500_depth_$GZ_WORLD_NAME"
 PX4_DIR="$HOME/PX4_Autopilot"
 FIXED_FRAME="x500_depth_0/camera_link/StereoOV7251"
-RVIZ_CFG="/tmp/x500_depth_depth_cam.rviz"
-SCAN_GZ_TOPIC="/world/${WORLD_NAME}/model/${MODEL_NAME}/link/lidar_sensor_link/sensor/lidar/scan"
+RVIZ_CFG="/tmp/x500_depth.rviz"
 
 die() 
 { 
@@ -62,10 +61,6 @@ Visualization Manager:
       Name: DepthImage
       Enabled: true
       Topic: /depth_camera
-    - Class: rviz_default_plugins/LaserScan
-      Name: DepthScan
-      Enabled: true
-      Topic: /depth_camera/laser_scan
   Tools:
     - Class: rviz_default_plugins/Interact
     - Class: rviz_default_plugins/MoveCamera
@@ -80,25 +75,21 @@ Window Geometry:
   Y: 50
 EOF
 
-PX4_CMD="cd $PX4_DIR && make px4_sitl ${PX4_TARGET}"
+PX4_CMD="cd ${PX4_DIR} && make px4_sitl ${PX4_TARGET}"
 BRIDGE_CMD="ros2 run ros_gz_bridge parameter_bridge \
     /depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked \
     /depth_camera@sensor_msgs/msg/Image[gz.msgs.Image \
-    /camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo \
-    ${SCAN_GZ_TOPIC}@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan \
-    --ros-args -r ${SCAN_GZ_TOPIC}:=/depth_camera/laser_scan"
+    /camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo"
 RVIZ_CMD="sleep 5 && rviz2 -d $RVIZ_CFG --ros-args -p use_sim_time:=true"
-MONITOR_CMD="sleep 2 && ros2 topic list -t && echo && ros2 topic hz /depth_camera/points"
 
-tmux new-session -d -s "$SESSION" -n px4 bash
-tmux new-window -t "$SESSION" -n bridge bash
-tmux new-window -t "$SESSION" -n rviz2 bash
-tmux new-window -t "$SESSION" -n monitor bash
+tmux new-session -d -s "$SESSION" -n px4 zsh
+tmux new-pane -t "$SESSION" -n bridge zsh
+tmux new-pane -t "$SESSION" -n rviz2 zsh
+tmux new-pane -t "$SESSION" -n extra zsh
 
 tmux send-keys -t "$SESSION:px4" "$PX4_CMD" C-m
 tmux send-keys -t "$SESSION:bridge" "$BRIDGE_CMD" C-m
 tmux send-keys -t "$SESSION:rviz2" "$RVIZ_CMD" C-m
-tmux send-keys -t "$SESSION:monitor" "$MONITOR_CMD" C-m
 
 tmux select-window -t "$SESSION:px4"
 tmux attach -t "$SESSION"
