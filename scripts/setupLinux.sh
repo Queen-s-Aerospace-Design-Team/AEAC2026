@@ -7,8 +7,6 @@
 #	- QGroundControl (installed into ~/Downloads folder)
 # This script will also confirm git user settings
 
-set -e
-
 # ------- Configure Git User Settings -------
 
 echo "=== Git user configuration ==="
