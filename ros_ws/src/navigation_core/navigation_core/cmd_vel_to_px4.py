@@ -1,13 +1,14 @@
 import rclpy
+import math
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 from px4_msgs.msg import (
     OffboardControlMode,
     TrajectorySetpoint,
-    VehicleCommand
+    VehicleCommand,
+    VehicleLocalPosition
 )
-from nav_msgs.msg import Odometry
-
 
 class cmd_vel_to_px4(Node):
     def __init__(self):
@@ -21,6 +22,7 @@ class cmd_vel_to_px4(Node):
 
         self.cmd_vel = Twist()
         self.have_odom = False
+        self.vehicle_yaw = None
 
         # Subscribers
         self.create_subscription(
@@ -34,6 +36,13 @@ class cmd_vel_to_px4(Node):
             Odometry,
             '/odometry/filtered',
             self.odom_callback,
+            10
+        )
+        
+        self.create_subscription(
+            VehicleLocalPosition,
+            '/fmu/in/vehicle_local_position',
+            self.local_position_callback,
             10
         )
 
@@ -58,52 +67,50 @@ class cmd_vel_to_px4(Node):
 
         self.timer = self.create_timer(1.0 / self.rate, self.timer_callback)
 
-        self.get_logger().info('cmd_vel → PX4 bridge started')
+        self.get_logger().info('cmd_vel/PX4 bridge started')
 
-    def cmd_vel_callback(self, msg):
+    def cmd_vel_callback(self, msg: Twist):
         self.cmd_vel = msg
 
-    def odom_callback(self, msg):
-        self.have_odom = True
-
+    def odom_callback(self, msg: Odometry):
+        self.have_odom = msg.pose != None
+        
+    def local_position_callback(self, msg: VehicleLocalPosition):
+        self.vehicle_yaw = msg.heading
+    
     def timer_callback(self):
-        # if not self.have_odom:
-        #     return
+        if self.vehicle_yaw is None:
+            self.get_logger().warn("No vehicle heading yet; can't rotate cmd_vel.")
+            return
 
-        timestamp = int(self.get_clock().now().nanoseconds / 1000)
+        yaw = self.vehicle_yaw
+        
+        # Accept FLU from Twist msg
+        vx_flu = float(self.cmd_vel.linear.x)
+        vy_flu = float(self.cmd_vel.linear.y)
+        vz_flu = float(self.cmd_vel.linear.z)
 
-        # 1. Offboard control mode
-        offboard = OffboardControlMode()
-        offboard.timestamp = timestamp
-        offboard.position = False
-        offboard.velocity = True
-        offboard.acceleration = False
-        offboard.attitude = False
-        offboard.body_rate = False
-        self.offboard_pub.publish(offboard)
+        # FLU -> body-FRD (flip y and z)
+        vx_body = vx_flu
+        vy_body = -vy_flu
+        vz_body = -vz_flu
 
-        # 2. Trajectory setpoint
+        # transform to N/E
+        v_n = math.cos(yaw) * vx_body - math.sin(yaw) * vy_body
+        v_e = math.sin(yaw) * vx_body + math.cos(yaw) * vy_body
+        v_d = vz_body
+
         sp = TrajectorySetpoint()
-        sp.timestamp = timestamp
+        sp.timestamp = int(self.get_clock().now().nanoseconds / 1000)
 
-        sp.velocity = [
-            float(self.cmd_vel.linear.x),
-            float(self.cmd_vel.linear.y),
-            0.0 # zero velocity in z-axis (obviosly we want fixed height for this example)
-        ]
+        sp.velocity = [v_n, v_e, 0.0 * v_d]  # keep z velocity 0 if you're holding altitude via position
+        sp.position = [None, None, self.fixed_altitude]
 
-        sp.position = [
-            float('nan'),
-            float('nan'),
-            self.fixed_altitude
-        ]
-
-        sp.yaw = float('nan')
+        sp.yaw = None
         sp.yawspeed = float(self.cmd_vel.angular.z)
 
         self.setpoint_pub.publish(sp)
 
-        # 3. Ensure offboard + armed
         self.send_vehicle_command(
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE,
             1,
@@ -115,11 +122,11 @@ class cmd_vel_to_px4(Node):
             1.0
         )
 
-    def send_vehicle_command(self, command, param1=0.0, param2=0.0):
+    def send_vehicle_command(self, command: int, param1: float = 0.0, param2: float = 0.0):
         msg = VehicleCommand()
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        msg.param1 = float(param1)
-        msg.param2 = float(param2)
+        msg.param1 = param1
+        msg.param2 = param2
         msg.command = command
         msg.target_system = 1
         msg.target_component = 1

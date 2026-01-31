@@ -18,9 +18,22 @@
     "customizations": {
         "vscode": {
             "settings": {
-                "cmake.generator": "Ninja",
-                "python.defaultInterpreterPath": "/usr/bin/python3",
                 "terminal.integrated.defaultProfile.linux": "zsh",
+
+                // Python
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                "python.analysis.autoSearchPaths": true,
+                "python.analysis.useLibraryCodeForTypes": true,
+                "python.analysis.typeCheckingMode": "basic",
+                "python.analysis.extraPaths": [
+                    "/opt/ros/humble/lib/python3.10/site-packages",
+                    "${workspaceFolder}/ros_ws/install/local/lib/python3.10/dist-packages",
+                    "${workspaceFolder}/ros_ws/install/px4_msgs/local/lib/python3.10/dist-packages",
+                    "${workspaceFolder}/ros_ws/src"
+                ],
+
+                // C++
+                "cmake.generator": "Ninja",
                 "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
                 "C_Cpp.default.includePath": ["${workspaceFolder}/**", "/opt/ros/humble/include/**", "/usr/include/**"],
                 "C_Cpp.default.browse.path": ["${workspaceFolder}/**", "/opt/ros/humble/include/**", "/usr/include/**"],
@@ -28,7 +41,7 @@
                 "C_Cpp.default.cStandard": "c23",
                 "C_Cpp.default.cppStandard": "gnu++23",
 
-                // ---- Added for .clang-format support ----
+                // clang-format support
                 "editor.defaultFormatter": "xaver.clang-format",
                 "editor.formatOnSave": true,
                 "C_Cpp.formatting": "clangFormat"

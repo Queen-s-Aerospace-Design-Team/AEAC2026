@@ -1,15 +1,11 @@
-#!/usr/bin/env python3
-
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-import math
 
 ORBIT = 'orbit'
 TRIANGLE = 'triangle'
 
-class CmdVelTest(Node):
-
+class cmd_vel_test(Node):
     def __init__(self):
         super().__init__('cmd_vel_test')
 
@@ -38,11 +34,7 @@ class CmdVelTest(Node):
         # Internal state
         self.cmd = Twist()
         self.start_time = self.get_clock().now()
-
-        self.timer = self.create_timer(
-            1.0 / self.rate,
-            self.timer_callback
-        )
+        self.timer = self.create_timer(1.0 / self.rate,self.timer_callback)
 
         self.get_logger().info('cmd_vel test pattern generator started')
 
@@ -96,12 +88,9 @@ class CmdVelTest(Node):
             self.cmd.linear.x = 0.0
             self.cmd.angular.z = self.angular_speed
 
-    # -------------------------
-
-
 def main(args=None):
     rclpy.init(args=args)
-    node = CmdVelTest()
+    node = cmd_vel_test()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
