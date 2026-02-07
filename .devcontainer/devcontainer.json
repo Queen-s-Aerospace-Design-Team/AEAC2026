@@ -34,17 +34,18 @@
 
                 // C++
                 "cmake.generator": "Ninja",
-                "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-                "C_Cpp.default.includePath": ["${workspaceFolder}/**", "/opt/ros/humble/include/**", "/usr/include/**"],
-                "C_Cpp.default.browse.path": ["${workspaceFolder}/**", "/opt/ros/humble/include/**", "/usr/include/**"],
+                "C_Cpp.default.includePath": ["${workspaceFolder}/ros_ws/install/**", "${workspaceFolder}/ros_ws/src/**", "/opt/ros/humble/include/**", "/usr/include/**"],
+                "C_Cpp.default.browse.path": ["${workspaceFolder}/ros_ws/install/**", "${workspaceFolder}/ros_ws/src/**", "/opt/ros/humble/include/**", "/usr/include/**"],
                 "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
-                "C_Cpp.default.cStandard": "c23",
-                "C_Cpp.default.cppStandard": "gnu++23",
+                "C_Cpp.default.cStandard": "c17",
+                "C_Cpp.default.cppStandard": "gnu++20",
+                "C_Cpp.workspaceParsingPriority": "medium",
 
                 // clang-format support
                 "editor.defaultFormatter": "xaver.clang-format",
                 "editor.formatOnSave": true,
-                "C_Cpp.formatting": "clangFormat"
+                "C_Cpp.formatting": "clangFormat",
+                "remote.downloadExtensionsLocally": true
             },
             "extensions": [
                 "ms-vscode.cpptools",
