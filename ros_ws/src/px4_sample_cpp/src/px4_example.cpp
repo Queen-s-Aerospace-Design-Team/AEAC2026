@@ -40,12 +40,14 @@ class PX4Example : public rclcpp::Node
   public:
     PX4Example() : Node( "offboard_control" )
     {
+        rclcpp::QoS bestEffortQoS = rclcpp::QoS( 10 ).best_effort();
+
         m_offboardControlMode_pub = this->create_publisher<OffboardControlMode>( "/fmu/in/offboard_control_mode", 10 );
         m_trajectorySetpoint_pub  = this->create_publisher<TrajectorySetpoint>( "/fmu/in/trajectory_setpoint", 10 );
         m_vehicleCommand_pub      = this->create_publisher<VehicleCommand>( "/fmu/in/vehicle_command", 10 );
 
-        m_localPosition_sub = this->create_subscription<px4_msgs::msg::VehicleLocalPosition>( "/fmu/out/vehicle_local_position", 10,
-                                                                                              &PX4Example::onVehicleLocalPosition );
+        m_localPosition_sub = this->create_subscription<px4_msgs::msg::VehicleLocalPosition>(
+            "/fmu/out/vehicle_local_position", bestEffortQoS, std::bind( &PX4Example::onVehicleLocalPosition, this, std::placeholders::_1 ) );
 
         m_offboardCounter = 0;
 
@@ -86,6 +88,9 @@ class PX4Example : public rclcpp::Node
                     {
                         break;
                     }
+
+                    publish_offboard_control_mode();
+                    publish_trajectory_setpoint();
 
                     const float dx    = m_localPosition->x - TARGET_X;
                     const float dy    = m_localPosition->y - TARGET_Y;
