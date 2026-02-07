@@ -20,7 +20,7 @@ using namespace px4_msgs::msg;
 namespace
 {
     constexpr float PI                   = 3.14159f;
-    constexpr float POSITION_THRESHOLD   = 0.25f; // meters
+    constexpr float POSITION_THRESHOLD   = 0.15f; // meters
     constexpr float VELOCITY_THRESHOLD   = 0.30f; // m/s
     constexpr std::chrono::seconds DWELL = 1s;    // must stay within band for this long
     constexpr float TARGET_X             = 0.0f;
