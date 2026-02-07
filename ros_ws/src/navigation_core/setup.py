@@ -28,6 +28,7 @@ setup(
         'console_scripts': [
             'cmd_vel_to_px4 = navigation_core.cmd_vel_to_px4:main',
             'cmd_vel_test = navigation_core.cmd_vel_test:main',
+            'pointcloud_manipulate = navigation_core.pointcloud_manipulate:main',
         ],
     },
 
