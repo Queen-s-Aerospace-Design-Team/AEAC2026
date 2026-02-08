@@ -1,11 +1,21 @@
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointCloud2, LaserScan
+from sensor_msgs_py import point_cloud2
+
 
 class pointcloud_manipulate(Node):
     def __init__(self):
         super().__init__('pointcloud_manipulate')
 
+        #publishers
+        self.scan_pub = self.create_publisher(
+            LaserScan,
+            '\scan'
+            10
+        )
+
+        #subscribers
         self.subscription = self.create_subscription(
             PointCloud2,
             '/depth_camera/points',
