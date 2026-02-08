@@ -28,7 +28,7 @@ find_package(sensor_msgs REQUIRED)
 # --- Mission Nodes ---
 
 add_executable(return_to_origin 
-    src/mission/return_to_origin.cpp
+    src/missions/return_to_origin.cpp
 )
 
 ament_target_dependencies(return_to_origin 

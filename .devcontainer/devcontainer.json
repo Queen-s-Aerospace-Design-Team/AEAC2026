@@ -44,11 +44,11 @@
                 "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
                 "C_Cpp.default.cStandard": "c17",
                 "C_Cpp.default.cppStandard": "gnu++20",
-                // "C_Cpp.workspaceParsingPriority": "medium",
                 // clang-format support
                 "editor.defaultFormatter": "xaver.clang-format",
                 "editor.formatOnSave": true,
                 "C_Cpp.formatting": "clangFormat",
+                // For faster performance
                 "remote.downloadExtensionsLocally": true
             },
             "extensions": [

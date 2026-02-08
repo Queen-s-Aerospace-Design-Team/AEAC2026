@@ -13,11 +13,6 @@
 using namespace std::chrono_literals;
 using namespace px4_msgs::msg;
 
-/**
- * @brief PX4 Example class to test and experiment with px4 functionlaity. Copied from
- * px4_ros_com/src/examples/offboard/offboard_control.cpp.
- */
-
 namespace
 {
     constexpr float PI                   = 3.14159f;
