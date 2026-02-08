@@ -24,12 +24,43 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 # Targets - FOLLOW THIS PATTERN for adding cmake executables (ROS Nodes)
-add_executable(px4_example src/px4_example.cpp)
-ament_target_dependencies(px4_example rclcpp px4_msgs)
-install(TARGETS px4_example DESTINATION lib/${PROJECT_NAME})
+add_executable(px4_example 
+    src/px4_example.cpp
+)
+
+ament_target_dependencies(px4_example 
+    rclcpp 
+    geometry_msgs 
+    sensor_msgs 
+    px4_msgs
+)
+
 target_include_directories(px4_example PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+    $<INSTALL_INTERFACE:include>
+)
+
+install(TARGETS px4_example DESTINATION lib/${PROJECT_NAME})
+
+# --- Mission Nodes ---
+
+add_executable(return_to_origin 
+    src/mission/return_to_origin.cpp
+)
+
+ament_target_dependencies(return_to_origin 
+    rclcpp 
+    geometry_msgs 
+    sensor_msgs 
+    px4_msgs
+)
+
+target_include_directories(return_to_origin PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+install(TARGETS return_to_origin DESTINATION lib/${PROJECT_NAME})
 
 # Testing
 if(BUILD_TESTING)

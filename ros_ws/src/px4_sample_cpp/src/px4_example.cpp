@@ -20,17 +20,18 @@ using namespace px4_msgs::msg;
 namespace
 {
     constexpr float PI                   = 3.14159f;
-    constexpr float POSITION_THRESHOLD   = 0.15f; // meters
+    constexpr float POSITION_THRESHOLD   = 0.20f; // meters
     constexpr float VELOCITY_THRESHOLD   = 0.30f; // m/s
     constexpr std::chrono::seconds DWELL = 1s;    // must stay within band for this long
     constexpr float TARGET_X             = 0.0f;
     constexpr float TARGET_Y             = 0.0f;
     constexpr float TARGET_Z             = -2.5f;
 
-    enum State : uint8_t
+    enum FSM : uint8_t
     {
-        Warmup,
-        Offboard,
+        Initiate,
+        Approach,
+        Arrived,
         Done
     };
 } // namespace
@@ -47,7 +48,8 @@ class PX4Example : public rclcpp::Node
         m_vehicleCommand_pub      = this->create_publisher<VehicleCommand>( "/fmu/in/vehicle_command", 10 );
 
         m_localPosition_sub = this->create_subscription<px4_msgs::msg::VehicleLocalPosition>(
-            "/fmu/out/vehicle_local_position", bestEffortQoS, std::bind( &PX4Example::onVehicleLocalPosition, this, std::placeholders::_1 ) );
+            "/fmu/out/vehicle_local_position", bestEffortQoS,
+            std::bind( &PX4Example::onVehicleLocalPosition, this, std::placeholders::_1 ) );
 
         m_offboardCounter = 0;
 
@@ -55,24 +57,17 @@ class PX4Example : public rclcpp::Node
         {
             switch( m_state )
             {
-                case Done:
-                {
-                    m_timer->cancel(); // stop this timer callback
-
-                    RCLCPP_INFO( this->get_logger(), "Reached setpoint -> exiting Offboard (POSCTL)." );
-                    break;
-                }
-                case Warmup:
+                case Initiate:
                 {
                     // offboard_control_mode needs to be paired with trajectory_setpoint
-                    publish_offboard_control_mode();
-                    publish_trajectory_setpoint();
+                    publishOffboardControlMode();
+                    publishTrajectorySetpoint();
 
                     if( m_offboardCounter == 10 )
                     {
-                        this->publish_vehicle_command( VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 6 ); // Offboard
-                        this->arm();
-                        m_state = State::Offboard;
+                        publishVehicleCommand( VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 6 ); // Offboard
+                        arm();
+                        m_state = FSM::Approach;
                     }
 
                     if( m_offboardCounter < 11 )
@@ -82,15 +77,15 @@ class PX4Example : public rclcpp::Node
 
                     break;
                 }
-                case Offboard:
+                case Approach:
                 {
                     if( !m_localPosition )
                     {
                         break;
                     }
 
-                    publish_offboard_control_mode();
-                    publish_trajectory_setpoint();
+                    publishOffboardControlMode();
+                    publishTrajectorySetpoint();
 
                     const float dx    = m_localPosition->x - TARGET_X;
                     const float dy    = m_localPosition->y - TARGET_Y;
@@ -109,15 +104,31 @@ class PX4Example : public rclcpp::Node
                         }
                         else if( ( now() - m_reachedSince ) > rclcpp::Duration( DWELL ) )
                         {
-                            // Exit Offboard
-                            this->publish_vehicle_command( VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 3 );
-                            m_state = State::Done;
+
+                            m_state = FSM::Arrived;
                         }
                     }
                     else
                     {
                         m_inReachedBand = false;
                     }
+
+                    break;
+                }
+                case Arrived:
+                {
+                    // Exit Offboard
+                    publishVehicleCommand( VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 3 );
+
+                    m_state = FSM::Done;
+                    break;
+                }
+                case Done:
+                {
+                    m_timer->cancel(); // stop this timer callback
+
+                    RCLCPP_INFO( this->get_logger(), "Reached setpoint -> exiting Offboard (POSCTL)." );
+                    break;
                 }
             }
         };
@@ -131,9 +142,9 @@ class PX4Example : public rclcpp::Node
     void disarm();
 
   private:
-    void publish_offboard_control_mode();
-    void publish_trajectory_setpoint();
-    void publish_vehicle_command( uint16_t command, float param1 = 0.0, float param2 = 0.0 );
+    void publishOffboardControlMode();
+    void publishTrajectorySetpoint();
+    void publishVehicleCommand( uint16_t command, float param1 = 0.0, float param2 = 0.0 );
     void onVehicleLocalPosition( const VehicleLocalPosition::SharedPtr msg );
 
     // Publishers
@@ -152,24 +163,24 @@ class PX4Example : public rclcpp::Node
 
     uint8_t m_offboardCounter; //!< counter for the number of setpoints sent
 
-    State m_state = State::Warmup;
+    FSM m_state = FSM::Initiate;
 };
 
 void PX4Example::arm()
 {
-    publish_vehicle_command( VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0 );
+    publishVehicleCommand( VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0 );
 
     RCLCPP_INFO( this->get_logger(), "Arm command send" );
 }
 
 void PX4Example::disarm()
 {
-    publish_vehicle_command( VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0 );
+    publishVehicleCommand( VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0 );
 
     RCLCPP_INFO( this->get_logger(), "Disarm command send" );
 }
 
-void PX4Example::publish_offboard_control_mode()
+void PX4Example::publishOffboardControlMode()
 {
     OffboardControlMode msg{};
     msg.position     = true;
@@ -181,10 +192,10 @@ void PX4Example::publish_offboard_control_mode()
     m_offboardControlMode_pub->publish( msg );
 }
 
-void PX4Example::publish_trajectory_setpoint()
+void PX4Example::publishTrajectorySetpoint()
 {
     TrajectorySetpoint msg{};
-    msg.position = { 0.0, 0.0, -2.5 }; // Position 0, 0, and 2.5m in the world
+    msg.position = { TARGET_X, TARGET_Y, TARGET_Z }; // Position 0, 0, and 2.5m in the world
     // msg.velocity  = { 0 };              // { 5.0f, 5.0f, -1.0f };
     msg.yaw       = -1 * PI; // [-PI:PI]
     msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
@@ -192,7 +203,7 @@ void PX4Example::publish_trajectory_setpoint()
     m_trajectorySetpoint_pub->publish( msg );
 }
 
-void PX4Example::publish_vehicle_command( uint16_t command, float param1, float param2 )
+void PX4Example::publishVehicleCommand( uint16_t command, float param1, float param2 )
 {
     VehicleCommand msg{};
     msg.param1           = param1;
@@ -203,7 +214,8 @@ void PX4Example::publish_vehicle_command( uint16_t command, float param1, float 
     msg.source_system    = 1;
     msg.source_component = 1;
     msg.from_external    = true;
-    msg.timestamp        = this->get_clock()->now().nanoseconds() / 1000;
+    std::chrono::system_clock::now();
+    msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
     m_vehicleCommand_pub->publish( msg );
 }
 

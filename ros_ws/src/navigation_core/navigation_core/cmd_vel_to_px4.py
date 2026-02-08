@@ -1,4 +1,5 @@
 import rclpy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 import math
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -14,16 +15,21 @@ class cmd_vel_to_px4(Node):
     def __init__(self):
         super().__init__('cmd_vel_to_px4')
 
-        self.declare_parameter('fixed_altitude', -2.0) # Fix altitude of 2.0 meters
-        self.declare_parameter('setpoint_rate', 20.0)
+        self.declare_parameter('fixed_altitude', -2.5) # Fix altitude of 2.0 meters
+        self.declare_parameter('setpoint_rate', 10.0)
 
         self.fixed_altitude = self.get_parameter('fixed_altitude').value
         self.rate = self.get_parameter('setpoint_rate').value
 
         self.cmd_vel = Twist()
         self.have_odom = False
-        self.vehicle_yaw = None
+        self.vehicle_yaw = 0.0
 
+        bestEffortQoS = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            depth=10
+        )
+        
         # Subscribers
         self.create_subscription(
             Twist,
@@ -41,9 +47,9 @@ class cmd_vel_to_px4(Node):
         
         self.create_subscription(
             VehicleLocalPosition,
-            '/fmu/in/vehicle_local_position',
+            '/fmu/out/vehicle_local_position',
             self.local_position_callback,
-            10
+            bestEffortQoS
         )
 
         # Publishers
@@ -69,16 +75,17 @@ class cmd_vel_to_px4(Node):
 
         self.get_logger().info('cmd_vel/PX4 bridge started')
 
-    def cmd_vel_callback(self, msg: Twist):
+    def cmd_vel_callback(self, msg: Twist) -> None:
         self.cmd_vel = msg
 
-    def odom_callback(self, msg: Odometry):
+    def odom_callback(self, msg: Odometry) -> None:
         self.have_odom = msg.pose != None
         
-    def local_position_callback(self, msg: VehicleLocalPosition):
+    def local_position_callback(self, msg: VehicleLocalPosition) -> None:
         self.vehicle_yaw = msg.heading
+        self.get_logger().info(f"Received UAV heading of: {msg.heading:.3f} rad")
     
-    def timer_callback(self):
+    def timer_callback(self) -> None:
         if self.vehicle_yaw is None:
             self.get_logger().warn("No vehicle heading yet; can't rotate cmd_vel.")
             return
@@ -103,10 +110,10 @@ class cmd_vel_to_px4(Node):
         sp = TrajectorySetpoint()
         sp.timestamp = int(self.get_clock().now().nanoseconds / 1000)
 
-        sp.velocity = [v_n, v_e, 0.0 * v_d]  # keep z velocity 0 if you're holding altitude via position
-        sp.position = [None, None, self.fixed_altitude]
+        sp.velocity = [v_n, v_e, self.fixed_altitude]
+        # sp.position = [0.0, 0.0, self.fixed_altitude]
 
-        sp.yaw = None
+        sp.yaw = 0.0
         sp.yawspeed = float(self.cmd_vel.angular.z)
 
         self.setpoint_pub.publish(sp)
@@ -125,8 +132,8 @@ class cmd_vel_to_px4(Node):
     def send_vehicle_command(self, command: int, param1: float = 0.0, param2: float = 0.0):
         msg = VehicleCommand()
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        msg.param1 = param1
-        msg.param2 = param2
+        msg.param1 = float(param1)
+        msg.param2 = float(param2)
         msg.command = command
         msg.target_system = 1
         msg.target_component = 1
