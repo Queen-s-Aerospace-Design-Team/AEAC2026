@@ -2,6 +2,8 @@
 # Used for acknowledging the vehicle command being received.
 # Follows the MAVLink COMMAND_ACK message definition
 
+uint32 MESSAGE_VERSION = 0
+
 uint64 timestamp		# time since system start (microseconds)
 
 # Result cases. This follows the MAVLink MAV_RESULT enum definition
@@ -21,7 +23,7 @@ uint16 ARM_AUTH_DENIED_REASON_TIMEOUT = 3
 uint16 ARM_AUTH_DENIED_REASON_AIRSPACE_IN_USE = 4
 uint16 ARM_AUTH_DENIED_REASON_BAD_WEATHER = 5
 
-uint8 ORB_QUEUE_LENGTH = 4
+uint8 ORB_QUEUE_LENGTH = 8
 
 uint32 command						# Command that is being acknowledged
 uint8 result						# Command result

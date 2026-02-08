@@ -1,25 +1,23 @@
 {
     "name": "QADT Dev Container (PX4)",
-
-    "dockerComposeFile": ["compose.base.yml", "compose.active.yml"],
-
+    "dockerComposeFile": [
+        "compose.base.yml",
+        "compose.active.yml"
+    ],
     "service": "dev",
     "overrideCommand": true,
     "workspaceFolder": "/home/qadt/${localWorkspaceFolderBasename}",
     "remoteUser": "qadt",
-
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
             "configureZshAsDefaultShell": true, // zsh terminal style will exist, but will only use bash
             "upgradePackages": false
         }
     },
-
     "customizations": {
         "vscode": {
             "settings": {
                 "terminal.integrated.defaultProfile.linux": "zsh",
-
                 // Python
                 "python.defaultInterpreterPath": "/usr/bin/python3",
                 "python.analysis.autoSearchPaths": true,
@@ -31,20 +29,27 @@
                     "${workspaceFolder}/ros_ws/install/px4_msgs/local/lib/python3.10/dist-packages",
                     "${workspaceFolder}/ros_ws/src"
                 ],
-
                 // C++
-                "cmake.generator": "Ninja",
-                "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-                "C_Cpp.default.includePath": ["${workspaceFolder}/**", "/opt/ros/humble/include/**", "/usr/include/**"],
-                "C_Cpp.default.browse.path": ["${workspaceFolder}/**", "/opt/ros/humble/include/**", "/usr/include/**"],
+                "C_Cpp.default.includePath": [
+                    "${workspaceFolder}/ros_ws/src/**",
+                    "${workspaceFolder}/ros_ws/install/px4_msgs/**",
+                    "/opt/ros/humble/include/**",
+                    "/usr/include/**"
+                ],
+                "C_Cpp.default.browse.path": [
+                    "${workspaceFolder}/ros_ws/src/**",
+                    "${workspaceFolder}/ros_ws/install/px4_msgs/**",
+                    "/opt/ros/humble/include/**"
+                ],
                 "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
-                "C_Cpp.default.cStandard": "c23",
-                "C_Cpp.default.cppStandard": "gnu++23",
-
+                "C_Cpp.default.cStandard": "c17",
+                "C_Cpp.default.cppStandard": "gnu++20",
+                // "C_Cpp.workspaceParsingPriority": "medium",
                 // clang-format support
                 "editor.defaultFormatter": "xaver.clang-format",
                 "editor.formatOnSave": true,
-                "C_Cpp.formatting": "clangFormat"
+                "C_Cpp.formatting": "clangFormat",
+                "remote.downloadExtensionsLocally": true
             },
             "extensions": [
                 "ms-vscode.cpptools",
@@ -60,7 +65,14 @@
             ]
         }
     },
-
-    "initializeCommand": ["bash", "-lc", ".devcontainer/initialize.sh"],
-    "postStartCommand": ["bash", "-lc", ".devcontainer/postStart.sh"]
+    "initializeCommand": [
+        "bash",
+        "-lc",
+        ".devcontainer/initialize.sh"
+    ],
+    "postStartCommand": [
+        "bash",
+        "-lc",
+        ".devcontainer/postStart.sh"
+    ]
 }

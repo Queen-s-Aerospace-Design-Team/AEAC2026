@@ -15,7 +15,7 @@ class cmd_vel_test(Node):
         self.declare_parameter('linear_speed', 0.5)
         self.declare_parameter('angular_speed', 0.5)
         self.declare_parameter('segment_time', 5.0)
-        self.declare_parameter('twist_rate', 20.0)
+        self.declare_parameter('twist_rate', 10.0)
 
         self.orbit = self.get_parameter(ORBIT).value
         self.triangle = self.get_parameter(TRIANGLE).value
@@ -34,7 +34,7 @@ class cmd_vel_test(Node):
         # Internal state
         self.cmd = Twist()
         self.start_time = self.get_clock().now()
-        self.timer = self.create_timer(1.0 / self.rate,self.timer_callback)
+        self.timer = self.create_timer(1.0 / self.rate, self.timer_callback)
 
         self.get_logger().info('cmd_vel test pattern generator started')
 

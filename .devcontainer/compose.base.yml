@@ -1,3 +1,4 @@
+name: qadt-devcontainer
 services:
   dev:
     image: ghcr.io/queen-s-aerospace-design-team/devcontainer-px4:latest

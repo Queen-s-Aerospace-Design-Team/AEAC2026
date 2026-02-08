@@ -10,10 +10,11 @@ def generate_launch_description():
         name='cmd_vel_test',
         output='screen',
         parameters=[{
-            'orbit': False,
-            'triangle': True,
-            'linear_speed': 0.3,
-            'angular_speed': 0.4
+            'orbit': True,
+            'triangle': False,
+            'linear_speed': 0.5,
+            'angular_speed': 0.25,
+            'twist_rate': 10.0
         }]
     )
 
@@ -23,8 +24,8 @@ def generate_launch_description():
         name='cmd_vel_to_px4',
         output='screen',
         parameters=[{
-            'fixed_altitude': -2.0,
-            'setpoint_rate': 20.0
+            'fixed_altitude': -2.5,
+            'setpoint_rate': 10.0
         }]
     )
 

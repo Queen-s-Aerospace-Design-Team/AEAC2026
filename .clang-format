@@ -1,6 +1,7 @@
 # Documentation for all clang-format formatting options: https://clang.llvm.org/docs/ClangFormatStyleOptions.html
 
 ---
+BasedOnStyle: LLVM
 Language: Cpp
 AccessModifierOffset: -2
 AlignConsecutiveAssignments: true
@@ -30,10 +31,17 @@ ForEachMacros:
   - Q_FOREACH
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:           '^(<|"(gtest|gmock|isl|json|)/)'
+  - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
     Priority:        2
+    SortPriority:    2
+    CaseSensitive:   true
+  - Regex:           '^((<|")(gtest|gmock|isl|json)/)'
+    Priority:        3
+  - Regex:           '<[[:alnum:].]+>'
+    Priority:        4
   - Regex:           '.*'
     Priority:        1
+    SortPriority:    0
 IndentCaseLabels: true
 IndentWidth: 4
 IndentWrappedFunctionNames: true
@@ -72,14 +80,7 @@ SpacesInSquareBrackets: false
 SpacesInContainerLiterals: true
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: true
-# SpacesInParens: Custom
-# SpacesInParensOptions:
-#   ExceptDoubleParentheses: true
-#   InConditionalStatements: true
-#   InCStyleCasts: false
-#   InEmptyParentheses: false
-#   Other: true
-Standard: c++20
+Standard: Latest
 TabWidth: 4
 UseTab: Never
 ---

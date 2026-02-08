@@ -12,13 +12,13 @@ COMPOSE_FILES=(
 # Run initialize script
 "$DEVCONTAINER_DIR/initialize.sh"
 
-# Remove conflicting container if it exists
-if docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
-    echo "Removing existing container '$CONTAINER_NAME'..."
-    docker rm -f "$CONTAINER_NAME"
-fi
+# # Remove conflicting container if it exists
+# if docker ps -a --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
+#     echo "Removing existing container '$CONTAINER_NAME'..."
+#     docker rm -f "$CONTAINER_NAME"
+# fi
 
 # Start container
-docker compose "${COMPOSE_FILES[@]}" up -d
+docker compose -p $CONTAINER_NAME "${COMPOSE_FILES[@]}" up -d
 docker exec -it "$CONTAINER_NAME" bash
 docker compose "${COMPOSE_FILES[@]}" down
