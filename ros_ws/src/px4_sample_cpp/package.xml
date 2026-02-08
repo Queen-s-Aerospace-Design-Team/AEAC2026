@@ -1,35 +1,36 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>px4_sample_cpp</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="anthonyjb5228@gmail.com">qadt</maintainer>
-  <license>TODO: License declaration</license>
+    <name>flight_missions</name>
+    <version>1.0.0</version>
+    <description>Package holding PX4 flight missions</description>
+    <maintainer email="anthonyjb5228@gmail.com">QADT</maintainer>
+    <license>Apache-2.0</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+    <buildtool_depend>ament_cmake</buildtool_depend>
+    <buildtool_depend>eigen3_cmake_module</buildtool_depend>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
-  <buildtool_depend>eigen3_cmake_module</buildtool_depend>
+    <build_depend>eigen</build_depend>
+    <build_depend>ros_environment</build_depend>
 
-  <build_depend>eigen</build_depend>
-  <build_depend>ros_environment</build_depend>
+    <depend>rclcpp</depend>
+    <depend>px4_msgs</depend>
+    <depend>nav_msgs</depend>
+    <depend>geometry_msgs</depend>
+    <depend>sensor_msgs</depend>
+    <depend>laser_geometry</depend>
+    <depend>pointcloud_to_laserscan</depend>
+    <depend>tf2_ros</depend>
+    <depend>tf_transformations</depend>
 
-  <depend>builtin_interfaces</depend>
-  <depend>rclcpp</depend>
+    <depend>launch</depend>
+    <depend>launch_testing</depend>
+    <depend>launch_testing_ros</depend>
 
-  <depend>px4_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>sensor_msgs</depend>
+    <test_depend>ament_lint_auto</test_depend>
+    <test_depend>ament_lint_common</test_depend>
 
-  <depend>launch</depend>
-  <depend>launch_testing</depend>
-  <depend>launch_testing_ros</depend>
-
-  <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
-
-  <export>
-    <build_type>ament_cmake</build_type>
-  </export>
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
 </package>

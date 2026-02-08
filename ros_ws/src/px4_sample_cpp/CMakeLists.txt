@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(px4_sample_cpp)
+project(flight_missions)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -24,23 +24,6 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 # Targets - FOLLOW THIS PATTERN for adding cmake executables (ROS Nodes)
-add_executable(px4_example 
-    src/px4_example.cpp
-)
-
-ament_target_dependencies(px4_example 
-    rclcpp 
-    geometry_msgs 
-    sensor_msgs 
-    px4_msgs
-)
-
-target_include_directories(px4_example PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-install(TARGETS px4_example DESTINATION lib/${PROJECT_NAME})
 
 # --- Mission Nodes ---
 
