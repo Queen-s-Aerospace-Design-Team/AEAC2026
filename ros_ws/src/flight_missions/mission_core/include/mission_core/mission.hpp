@@ -27,16 +27,11 @@ class Mission : public rclcpp::Node
     enum FinishPolicy : uint8_t
     {
         Manual,
-        RTL
+        RTL,
+        RTLAndDisarm
     };
 
-    struct FinishPolicyConfig
-    {
-        FinishPolicy policy;
-        bool disarmAfterLanding;
-    };
-
-    explicit Mission( const std::string& nodeName, FinishPolicyConfig finishPolicyConfig = { Manual, false } );
+    explicit Mission( const std::string& nodeName, FinishPolicy finishPolicy = Manual );
     ~Mission() override;
 
   protected:
@@ -44,13 +39,13 @@ class Mission : public rclcpp::Node
     virtual bool isMissionObjectiveReached() = 0;
     virtual void onMissionObjectiveStart();
     virtual void onMissionFinished();
+    virtual void publishOffboardControlMode();
 
     void requestManualControlMode();
     void requestOffboardControlMode();
     void requestReturnToLaunch();
     void arm();
     void disarm();
-    void publishOffboardControlMode();
     void requestVehicleCommand( uint16_t command, float param1 = 0.0f, float param2 = 0.0f );
     void responseCallback( rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedFuture future );
     void onVehicleStatus( const px4_msgs::msg::VehicleStatus::SharedPtr msg );
@@ -59,20 +54,23 @@ class Mission : public rclcpp::Node
     bool isVehicleArmed() const;
     bool isVehicleLanded() const;
 
+    // Publishers
     rclcpp::Publisher<px4_msgs::msg::OffboardControlMode>::SharedPtr m_offboardControlMode_pub;
     rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr m_trajectorySetpoint_pub;
     rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr m_vehicleCommand_pub;
 
+    // Subscribers
     rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr m_vehicleStatus_sub;
     rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr m_vehicleLandDetected_sub;
 
+    // Clients
     rclcpp::Client<px4_msgs::srv::VehicleCommand>::SharedPtr m_vehicleCommand_client;
 
     px4_msgs::msg::VehicleStatus::SharedPtr m_vehicleStatus;
     px4_msgs::msg::VehicleLandDetected::SharedPtr m_vehicleLandDetected;
 
     FSM m_state;
-    FinishPolicyConfig m_finishPolicyConfig;
+    FinishPolicy m_finishPolicy;
     bool m_serviceDone;
     uint8_t m_serviceResult;
     bool m_finishCommandIssued;

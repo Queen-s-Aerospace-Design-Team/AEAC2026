@@ -21,9 +21,9 @@ namespace
     constexpr std::chrono::seconds DWELL = std::chrono::seconds( 1 ); // must stay within band for this long
 
     // Origin target
-    constexpr float TARGET_X = 0.0f;
-    constexpr float TARGET_Y = 0.0f;
-    constexpr float TARGET_Z = -2.5f;
+    constexpr float ORBIT_TARGET_X = 0.0f;
+    constexpr float ORBIT_TARGET_Y = 0.0f;
+    constexpr float ORBIT_TARGET_Z = -2.5f;
 } // namespace
 
 namespace Utilities
@@ -149,9 +149,9 @@ class ReturnToOrigin : public rclcpp::Node
                 {
                     static rclcpp::Time reachedSince;
 
-                    const float dx    = m_localPosition->x - TARGET_X;
-                    const float dy    = m_localPosition->y - TARGET_Y;
-                    const float dz    = m_localPosition->z - TARGET_Z;
+                    const float dx    = m_localPosition->x - ORBIT_TARGET_X;
+                    const float dy    = m_localPosition->y - ORBIT_TARGET_Y;
+                    const float dz    = m_localPosition->z - ORBIT_TARGET_Z;
                     const float dist  = std::sqrt( dx * dx + dy * dy + dz * dz );
                     const bool inBand = dist < POSITION_THRESHOLD;
 
@@ -293,7 +293,7 @@ void ReturnToOrigin::publishOffboardControlMode()
 void ReturnToOrigin::publishTrajectorySetpoint()
 {
     TrajectorySetpoint msg{};
-    msg.position = { TARGET_X, TARGET_Y, TARGET_Z };
+    msg.position = { ORBIT_TARGET_X, ORBIT_TARGET_Y, ORBIT_TARGET_Z };
     // msg.velocity  = { 0 };              // { 5.0f, 5.0f, -1.0f };
     msg.yaw       = -1 * PI; // [-PI:PI]
     msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;

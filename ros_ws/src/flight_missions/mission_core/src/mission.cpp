@@ -1,4 +1,5 @@
 #include "mission_core/mission.hpp"
+
 #include "mission_core/utilities/utilities.hpp"
 
 #include <chrono>
@@ -8,14 +9,14 @@
 using namespace std::chrono_literals;
 using namespace px4_msgs::msg;
 
-Mission::Mission( const std::string& nodeName, FinishPolicyConfig finishPolicyConfig )
+Mission::Mission( const std::string& nodeName, FinishPolicy finishPolicy )
     : Node( nodeName )
     , m_offboardControlMode_pub( create_publisher<OffboardControlMode>( "/fmu/in/offboard_control_mode", 10 ) )
     , m_trajectorySetpoint_pub( create_publisher<TrajectorySetpoint>( "/fmu/in/trajectory_setpoint", 10 ) )
     , m_vehicleCommand_pub( create_publisher<VehicleCommand>( "/fmu/in/vehicle_command", 10 ) )
     , m_vehicleCommand_client( create_client<px4_msgs::srv::VehicleCommand>( "/fmu/vehicle_command" ) )
     , m_state( FSM::Init )
-    , m_finishPolicyConfig( finishPolicyConfig )
+    , m_finishPolicy( finishPolicy )
     , m_serviceDone( false )
     , m_serviceResult( 0 )
     , m_finishCommandIssued( false )
@@ -124,44 +125,28 @@ void Mission::responseCallback( rclcpp::Client<px4_msgs::srv::VehicleCommand>::S
         switch( m_serviceResult )
         {
             case VehicleCommandAck::VEHICLE_CMD_RESULT_ACCEPTED:
-            {
                 break;
-            }
             case VehicleCommandAck::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED:
-            {
                 RCLCPP_WARN( get_logger(), "VehicleCommand temporarily rejected" );
                 break;
-            }
             case VehicleCommandAck::VEHICLE_CMD_RESULT_DENIED:
-            {
                 RCLCPP_WARN( get_logger(), "VehicleCommand denied" );
                 break;
-            }
             case VehicleCommandAck::VEHICLE_CMD_RESULT_UNSUPPORTED:
-            {
                 RCLCPP_WARN( get_logger(), "VehicleCommand unsupported" );
                 break;
-            }
             case VehicleCommandAck::VEHICLE_CMD_RESULT_FAILED:
-            {
                 RCLCPP_WARN( get_logger(), "VehicleCommand failed" );
                 break;
-            }
             case VehicleCommandAck::VEHICLE_CMD_RESULT_IN_PROGRESS:
-            {
                 RCLCPP_WARN( get_logger(), "VehicleCommand in progress" );
                 break;
-            }
             case VehicleCommandAck::VEHICLE_CMD_RESULT_CANCELLED:
-            {
                 RCLCPP_WARN( get_logger(), "VehicleCommand cancelled" );
                 break;
-            }
             default:
-            {
                 RCLCPP_WARN( get_logger(), "VehicleCommand reply unknown" );
                 break;
-            }
         }
 
         m_serviceDone = true;
@@ -275,37 +260,42 @@ void Mission::runStateMachineTick()
         {
             if( !m_finishCommandIssued )
             {
-                if( m_finishPolicyConfig.policy == FinishPolicy::RTL )
+                switch( m_finishPolicy )
                 {
-                    requestReturnToLaunch();
-                }
-                else
-                {
-                    requestManualControlMode();
+                    case FinishPolicy::Manual:
+                        requestManualControlMode();
+                        break;
+                    case FinishPolicy::RTL:
+                    case FinishPolicy::RTLAndDisarm:
+                        requestReturnToLaunch();
+                        break;
                 }
 
                 m_finishCommandIssued = true;
                 break;
             }
 
+            // Wait for service to complete
             if( m_serviceDone )
             {
                 if( m_serviceResult == VehicleCommandAck::VEHICLE_CMD_RESULT_ACCEPTED )
                 {
-                    if( m_finishPolicyConfig.policy == FinishPolicy::RTL )
+                    switch( m_finishPolicy )
                     {
-                        RCLCPP_INFO( get_logger(), "RTL accepted. Monitoring landing/disarm status..." );
-                    }
-                    else
-                    {
-                        RCLCPP_INFO( get_logger(), "Manual mode resumed" );
+                        case FinishPolicy::Manual:
+                            RCLCPP_INFO( get_logger(), "Manual mode resumed" );
+                            break;
+                        case FinishPolicy::RTL:
+                        case FinishPolicy::RTLAndDisarm:
+                            RCLCPP_INFO( get_logger(), "RTL accepted. Monitoring landing/disarm status..." );
+                            break;
                     }
 
                     m_state = FSM::FinishPolicyMonitor;
                 }
                 else
                 {
-                    RCLCPP_ERROR( get_logger(), "Failed to execute finish policy command. Exiting..." );
+                    RCLCPP_ERROR( get_logger(), "Failed to execute finish policy command. Failing mission..." );
                     m_state = FSM::Failed;
                 }
             }
@@ -314,25 +304,33 @@ void Mission::runStateMachineTick()
         }
         case FSM::FinishPolicyMonitor:
         {
-            if( m_finishPolicyConfig.policy == FinishPolicy::Manual )
-            {
-                m_state = FSM::Finished;
-                break;
-            }
-
             const bool landed = isVehicleLanded();
             const bool armed  = isVehicleArmed();
 
-            if( landed && m_finishPolicyConfig.disarmAfterLanding && armed && !m_disarmRequestedAfterLanding )
+            switch( m_finishPolicy )
             {
-                disarm();
-                m_disarmRequestedAfterLanding = true;
-                break;
-            }
+                case FinishPolicy::Manual:
+                    m_state = FSM::Finished;
+                    break;
+                case FinishPolicy::RTL:
+                    if( landed && !armed )
+                    {
+                        m_state = FSM::Finished;
+                    }
+                    break;
+                case FinishPolicy::RTLAndDisarm:
+                    if( landed && armed && !m_disarmRequestedAfterLanding )
+                    {
+                        disarm();
+                        m_disarmRequestedAfterLanding = true;
+                        break;
+                    }
 
-            if( landed && !armed )
-            {
-                m_state = FSM::Finished;
+                    if( landed && !armed )
+                    {
+                        m_state = FSM::Finished;
+                    }
+                    break;
             }
 
             break;
@@ -341,13 +339,13 @@ void Mission::runStateMachineTick()
         {
             m_timer->cancel();
             onMissionFinished();
-            RCLCPP_INFO( get_logger(), "Mission Completed: Mission timer callback stopped." );
+            RCLCPP_INFO( get_logger(), "Mission Completed! Mission timer callback stopped." );
             break;
         }
         case FSM::Failed:
         {
             m_timer->cancel();
-            RCLCPP_ERROR( get_logger(), "Mission Failed: Mission timer callback stopped." );
+            RCLCPP_ERROR( get_logger(), "Mission Failed! Mission timer callback stopped. Exiting..." );
             rclcpp::shutdown();
             break;
         }
