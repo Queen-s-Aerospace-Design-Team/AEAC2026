@@ -11,13 +11,6 @@ target_link_libraries(return_to_origin PRIVATE
     mission_core
 )
 
-# ament_target_dependencies(return_to_origin
-#     rclcpp
-#     geometry_msgs
-#     sensor_msgs
-#     px4_msgs
-# )
-
 # --- return_to_origin_v2 node ---
 
 add_executable(return_to_origin_v2
@@ -31,13 +24,6 @@ target_link_libraries(return_to_origin_v2 PRIVATE
     mission_core
 )
 
-# ament_target_dependencies(return_to_origin_v2
-#     rclcpp
-#     geometry_msgs
-#     sensor_msgs
-#     px4_msgs
-# )
-
 # --- orbit_location node ---
 
 add_executable(orbit_location
@@ -50,13 +36,6 @@ target_include_directories(orbit_location PRIVATE
 target_link_libraries(orbit_location PRIVATE
     mission_core
 )
-
-# ament_target_dependencies(orbit_location
-#     rclcpp
-#     geometry_msgs
-#     sensor_msgs
-#     px4_msgs
-# )
 
 install(TARGETS
     return_to_origin
