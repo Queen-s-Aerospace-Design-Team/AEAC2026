@@ -2,22 +2,31 @@
 
 namespace Utilities
 {
-    bool waitForServices( rclcpp::Node* node, const std::vector<rclcpp::ClientBase::SharedPtr>& services,
-                                 std::chrono::seconds timeout )
+    bool waitForServices( rclcpp::Node* node, const std::vector<rclcpp::ClientBase::SharedPtr>& services, std::chrono::seconds timeout )
     {
+
+        constexpr uint8_t maxValidationRequests = 120; // 2 min to validate all services
+        uint8_t cntr                            = 0;
+
         for( const auto& service : services )
         {
-            RCLCPP_INFO_STREAM( node->get_logger(), "Waiting for service: " << service->get_service_name() );
+            RCLCPP_INFO( node->get_logger(), "Waiting for service: '%s'", service->get_service_name() );
 
             while( !service->wait_for_service( timeout ) )
             {
-                if( !rclcpp::ok() )
+                if( ++cntr > maxValidationRequests )
                 {
-                    RCLCPP_ERROR( node->get_logger(), "Interrupted while waiting for service: %s", service->get_service_name() );
+                    RCLCPP_ERROR( node->get_logger(), "Validation timed out on service: '%s'", service->get_service_name() );
                     return false;
                 }
 
-                RCLCPP_WARN( node->get_logger(), "Service %s not available, waiting again...", service->get_service_name() );
+                if( !rclcpp::ok() )
+                {
+                    RCLCPP_ERROR( node->get_logger(), "Interrupted while waiting for service: '%s'", service->get_service_name() );
+                    return false;
+                }
+
+                RCLCPP_WARN( node->get_logger(), "(%ds) Service '%s' not available, waiting again...", cntr, service->get_service_name() );
             }
         }
 

@@ -25,7 +25,6 @@
                 "python.analysis.typeCheckingMode": "basic",
                 "python.analysis.extraPaths": [
                     "/opt/ros/humble/lib/python3.10/site-packages",
-                    "${workspaceFolder}/ros_ws/install/local/lib/python3.10/dist-packages",
                     "${workspaceFolder}/ros_ws/install/px4_msgs/local/lib/python3.10/dist-packages",
                     "${workspaceFolder}/ros_ws/src"
                 ],
