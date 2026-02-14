@@ -26,16 +26,18 @@ Mission::Mission( const std::string& nodeName, FinishPolicy finishPolicy )
 
     if( !Utilities::waitForServices( this, { m_vehicleCommand_client } ) )
     {
-        RCLCPP_ERROR( get_logger(), "Failed to validate services. Exiting..." );
+        RCLCPP_ERROR( get_logger(), "Failed to validate services." );
         m_state = FSM::Failed;
     }
 
-    m_vehicleStatus_sub       = create_subscription<VehicleStatus>( "/fmu/out/vehicle_status", 10,
+    rclcpp::QoS bestEffortQoS = rclcpp::QoS( 10 ).best_effort();
+
+    m_vehicleStatus_sub       = create_subscription<VehicleStatus>( "/fmu/out/vehicle_status", bestEffortQoS,
                                                               std::bind( &Mission::onVehicleStatus, this, std::placeholders::_1 ) );
     m_vehicleLandDetected_sub = create_subscription<VehicleLandDetected>(
-        "/fmu/out/vehicle_land_detected", 10, std::bind( &Mission::onVehicleLandDetected, this, std::placeholders::_1 ) );
+        "/fmu/out/vehicle_land_detected", bestEffortQoS, std::bind( &Mission::onVehicleLandDetected, this, std::placeholders::_1 ) );
 
-    m_timer = create_wall_timer( 100ms, std::bind( &Mission::runStateMachineTick, this ) );
+    m_timer = create_wall_timer( 50ms, std::bind( &Mission::runStateMachineTick, this ) );
 }
 
 Mission::~Mission()
@@ -340,6 +342,7 @@ void Mission::runStateMachineTick()
             m_timer->cancel();
             onMissionFinished();
             RCLCPP_INFO( get_logger(), "Mission Completed! Mission timer callback stopped." );
+            rclcpp::shutdown();
             break;
         }
         case FSM::Failed:
