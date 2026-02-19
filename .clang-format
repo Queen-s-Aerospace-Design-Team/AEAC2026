@@ -31,17 +31,19 @@ ForEachMacros:
   - Q_FOREACH
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
-    Priority:        2
-    SortPriority:    2
-    CaseSensitive:   true
-  - Regex:           '^((<|")(gtest|gmock|isl|json)/)'
-    Priority:        3
-  - Regex:           '<[[:alnum:].]+>'
-    Priority:        4
-  - Regex:           '.*'
-    Priority:        1
-    SortPriority:    0
+  - Regex: '^".*"$'
+    Priority: 1
+  - Regex: '^<(px4_msgs|px4_ros_com|rclcpp|rcl|rcutils|rmw|ament_index_cpp|geometry_msgs|nav_msgs|sensor_msgs|std_msgs|tf2|tf2_ros)/'
+    Priority: 2
+  - Regex: '^<[[:alnum:]_\.]+>$'
+    Priority: 3
+  - Regex: '^<(llvm|llvm-c|clang|clang-c)/'
+    Priority: 4
+    CaseSensitive: true
+  - Regex: '^<(gtest|gmock|isl|json)/'
+    Priority: 5
+  - Regex: '.*'
+    Priority: 10
 IndentCaseLabels: true
 IndentWidth: 4
 IndentWrappedFunctionNames: true

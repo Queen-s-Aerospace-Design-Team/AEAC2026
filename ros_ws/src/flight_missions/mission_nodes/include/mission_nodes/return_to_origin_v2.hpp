@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mission_core/mission.hpp"
+
 #include <px4_msgs/msg/vehicle_local_position.hpp>
 
 class ReturnToOriginV2 : public Mission

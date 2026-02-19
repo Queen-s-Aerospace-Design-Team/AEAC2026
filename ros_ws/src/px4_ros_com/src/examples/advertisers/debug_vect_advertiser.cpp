@@ -37,9 +37,10 @@
  * @author Nuno Marques <nuno.marques@dronesolutions.io>
  */
 
-#include <chrono>
 #include <px4_msgs/msg/debug_vect.hpp>
 #include <rclcpp/rclcpp.hpp>
+
+#include <chrono>
 
 using namespace std::chrono_literals;
 
@@ -55,16 +56,14 @@ class DebugVectAdvertiser : public rclcpp::Node
         {
             auto debug_vect = px4_msgs::msg::DebugVect();
             debug_vect.timestamp =
-                std::chrono::time_point_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() )
-                    .time_since_epoch()
-                    .count();
+                std::chrono::time_point_cast<std::chrono::microseconds>( std::chrono::steady_clock::now() ).time_since_epoch().count();
             std::string name = "test";
             std::copy( name.begin(), name.end(), debug_vect.name.begin() );
             debug_vect.x = 1.0;
             debug_vect.y = 2.0;
             debug_vect.z = 3.0;
-            RCLCPP_INFO( this->get_logger(), "\033[97m Publishing debug_vect: time: %lu x: %f y: %f z: %f \033[0m",
-                         debug_vect.timestamp, debug_vect.x, debug_vect.y, debug_vect.z );
+            RCLCPP_INFO( this->get_logger(), "\033[97m Publishing debug_vect: time: %lu x: %f y: %f z: %f \033[0m", debug_vect.timestamp,
+                         debug_vect.x, debug_vect.y, debug_vect.z );
 
             this->publisher_->publish( debug_vect );
         };

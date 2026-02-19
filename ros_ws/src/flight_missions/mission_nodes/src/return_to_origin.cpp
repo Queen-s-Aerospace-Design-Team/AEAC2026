@@ -40,7 +40,7 @@ namespace Utilities
 
             while( !service->wait_for_service( timeout ) )
             {
-                if( ++cntr > maxValidationRequests ) 
+                if( ++cntr > maxValidationRequests )
                 {
                     RCLCPP_ERROR( node->get_logger(), "Validation timed out on service: '%s'", service->get_service_name() );
                     return false;

@@ -41,6 +41,7 @@ void ReturnToOriginV2::publishMissionSetpoint()
 {
     TrajectorySetpoint msg;
     msg.position  = { ORBIT_TARGET_X, ORBIT_TARGET_Y, ORBIT_TARGET_Z };
+    msg.velocity  = { 0.5f, 0.5f, 0.25f };
     msg.yaw       = -1 * PI; // [-PI:PI]
     msg.timestamp = get_clock()->now().nanoseconds() / 1000;
     m_trajectorySetpoint_pub->publish( msg );

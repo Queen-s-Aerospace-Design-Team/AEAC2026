@@ -42,9 +42,10 @@
 #ifndef FRAME_TRANSFORMS_H
 #define FRAME_TRANSFORMS_H
 
+#include <array>
+
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
-#include <array>
 
 // for Covariance types
 #include <geometry_msgs/msg/point.hpp>
@@ -267,8 +268,7 @@ namespace px4_ros_com
          * @brief Transform data expressed in one frame to another frame with additional
          * map origin parameter.
          */
-        Eigen::Vector3d transform_static_frame( const Eigen::Vector3d& vec, const Eigen::Vector3d& map_origin,
-                                                const StaticTF transform );
+        Eigen::Vector3d transform_static_frame( const Eigen::Vector3d& vec, const Eigen::Vector3d& map_origin, const StaticTF transform );
 
         /**
          * @brief Transform from orientation represented WRT NED frame to orientation

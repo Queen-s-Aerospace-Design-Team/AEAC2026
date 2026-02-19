@@ -87,7 +87,7 @@ void Mission::publishOffboardControlMode()
 {
     OffboardControlMode msg{};
     msg.position     = true;
-    msg.velocity     = false;
+    msg.velocity     = true;
     msg.acceleration = false;
     msg.attitude     = false;
     msg.body_rate    = false;
@@ -285,11 +285,8 @@ void Mission::runStateMachineTick()
                     switch( m_finishPolicy )
                     {
                         case FinishPolicy::Manual:
-                            RCLCPP_INFO( get_logger(), "Manual mode resumed" );
-                            break;
                         case FinishPolicy::RTL:
                         case FinishPolicy::RTLAndDisarm:
-                            RCLCPP_INFO( get_logger(), "RTL accepted. Monitoring landing/disarm status..." );
                             break;
                     }
 
