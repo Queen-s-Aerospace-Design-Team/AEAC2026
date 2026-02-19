@@ -21,9 +21,9 @@ namespace
     constexpr std::chrono::seconds DWELL = std::chrono::seconds( 1 ); // must stay within band for this long
 
     // Origin target
-    constexpr float TARGET_X = 0.0f;
-    constexpr float TARGET_Y = 0.0f;
-    constexpr float TARGET_Z = -2.5f;
+    constexpr float ORBIT_TARGET_X = 0.0f;
+    constexpr float ORBIT_TARGET_Y = 0.0f;
+    constexpr float ORBIT_TARGET_Z = -2.5f;
 } // namespace
 
 namespace Utilities
@@ -31,19 +31,28 @@ namespace Utilities
     static bool waitForServices( rclcpp::Node* node, const std::vector<rclcpp::ClientBase::SharedPtr>& services,
                                  std::chrono::seconds timeout = std::chrono::seconds( 1 ) )
     {
+        constexpr uint8_t maxValidationRequests = 120; // 2 min to validate all services
+        uint8_t cntr                            = 0;
+
         for( const auto& service : services )
         {
-            RCLCPP_INFO_STREAM( node->get_logger(), "Waiting for service: " << service->get_service_name() );
+            RCLCPP_INFO( node->get_logger(), "Waiting for service: '%s'", service->get_service_name() );
 
             while( !service->wait_for_service( timeout ) )
             {
-                if( !rclcpp::ok() )
+                if( ++cntr > maxValidationRequests )
                 {
-                    RCLCPP_ERROR( node->get_logger(), "Interrupted while waiting for service: %s", service->get_service_name() );
+                    RCLCPP_ERROR( node->get_logger(), "Validation timed out on service: '%s'", service->get_service_name() );
                     return false;
                 }
 
-                RCLCPP_WARN( node->get_logger(), "Service %s not available, waiting again...", service->get_service_name() );
+                if( !rclcpp::ok() )
+                {
+                    RCLCPP_ERROR( node->get_logger(), "Interrupted while waiting for service: '%s'", service->get_service_name() );
+                    return false;
+                }
+
+                RCLCPP_WARN( node->get_logger(), "(%ds) Service '%s' not available, waiting again...", cntr, service->get_service_name() );
             }
         }
 
@@ -70,7 +79,7 @@ class ReturnToOrigin : public rclcpp::Node
         if( !Utilities::waitForServices( this, { m_vehicleCommand_client } ) )
         {
             RCLCPP_ERROR( get_logger(), "Failed to validate services. Exiting..." );
-            return;
+            rclcpp::shutdown();
         }
 
         rclcpp::QoS bestEffortQoS = rclcpp::QoS( 10 ).best_effort();
@@ -149,9 +158,9 @@ class ReturnToOrigin : public rclcpp::Node
                 {
                     static rclcpp::Time reachedSince;
 
-                    const float dx    = m_localPosition->x - TARGET_X;
-                    const float dy    = m_localPosition->y - TARGET_Y;
-                    const float dz    = m_localPosition->z - TARGET_Z;
+                    const float dx    = m_localPosition->x - ORBIT_TARGET_X;
+                    const float dy    = m_localPosition->y - ORBIT_TARGET_Y;
+                    const float dz    = m_localPosition->z - ORBIT_TARGET_Z;
                     const float dist  = std::sqrt( dx * dx + dy * dy + dz * dz );
                     const bool inBand = dist < POSITION_THRESHOLD;
 
@@ -293,7 +302,7 @@ void ReturnToOrigin::publishOffboardControlMode()
 void ReturnToOrigin::publishTrajectorySetpoint()
 {
     TrajectorySetpoint msg{};
-    msg.position = { TARGET_X, TARGET_Y, TARGET_Z };
+    msg.position = { ORBIT_TARGET_X, ORBIT_TARGET_Y, ORBIT_TARGET_Z };
     // msg.velocity  = { 0 };              // { 5.0f, 5.0f, -1.0f };
     msg.yaw       = -1 * PI; // [-PI:PI]
     msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;

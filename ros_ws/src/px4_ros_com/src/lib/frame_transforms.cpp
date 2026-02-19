@@ -38,8 +38,9 @@
  * Adapted from MAVROS ftf_frame_conversions.cpp and ftf_quaternion_utils.cpp.
  */
 
-#include <assert.h>
 #include <px4_ros_com/frame_transforms.h>
+
+#include <assert.h>
 
 namespace px4_ros_com
 {
@@ -121,9 +122,9 @@ namespace px4_ros_com
                 {
                     auto m               = covmap;
                     std::size_t COV_SIZE = m.rows() * ( m.rows() + 1 ) / 2;
-                    assert( COV_SIZE == ARR_SIZE &&
-                            ( "covariance matrix URT size (%lu) is different from uORB msg covariance field size (%lu)",
-                              COV_SIZE, ARR_SIZE ) );
+                    assert(
+                        COV_SIZE == ARR_SIZE &&
+                        ( "covariance matrix URT size (%lu) is different from uORB msg covariance field size (%lu)", COV_SIZE, ARR_SIZE ) );
 
                     auto out = covmsg.begin();
 
@@ -138,9 +139,9 @@ namespace px4_ros_com
                 void array_urt_to_covariance_matrix( const std::array<float, ARR_SIZE>& covmsg, T& covmat )
                 {
                     std::size_t COV_SIZE = covmat.rows() * ( covmat.rows() + 1 ) / 2;
-                    assert( COV_SIZE == ARR_SIZE &&
-                            ( "covariance matrix URT size (%lu) is different from uORB msg covariance field size (%lu)",
-                              COV_SIZE, ARR_SIZE ) );
+                    assert(
+                        COV_SIZE == ARR_SIZE &&
+                        ( "covariance matrix URT size (%lu) is different from uORB msg covariance field size (%lu)", COV_SIZE, ARR_SIZE ) );
 
                     auto in = covmsg.begin();
 
@@ -241,11 +242,9 @@ namespace px4_ros_com
                 case StaticTF::NED_TO_ENU:
                 case StaticTF::ENU_TO_NED:
                 {
-                    Eigen::PermutationMatrix<6> NED_ENU_REFLECTION_XY_6(
-                        NED_ENU_REFLECTION_XY.indices().replicate<2, 1>() );
+                    Eigen::PermutationMatrix<6> NED_ENU_REFLECTION_XY_6( NED_ENU_REFLECTION_XY.indices().replicate<2, 1>() );
                     NED_ENU_REFLECTION_XY_6.indices().middleRows<3>( 3 ).array() += 3;
-                    Eigen::DiagonalMatrix<double, 6> NED_ENU_REFLECTION_Z_6(
-                        NED_ENU_REFLECTION_Z.diagonal().replicate<2, 1>() );
+                    Eigen::DiagonalMatrix<double, 6> NED_ENU_REFLECTION_Z_6( NED_ENU_REFLECTION_Z.diagonal().replicate<2, 1>() );
 
                     cov_out = NED_ENU_REFLECTION_XY_6 * ( NED_ENU_REFLECTION_Z_6 * cov_in * NED_ENU_REFLECTION_Z_6 ) *
                               NED_ENU_REFLECTION_XY_6.transpose();
@@ -278,12 +277,10 @@ namespace px4_ros_com
                 case StaticTF::NED_TO_ENU:
                 case StaticTF::ENU_TO_NED:
                 {
-                    Eigen::PermutationMatrix<9> NED_ENU_REFLECTION_XY_9(
-                        NED_ENU_REFLECTION_XY.indices().replicate<3, 1>() );
+                    Eigen::PermutationMatrix<9> NED_ENU_REFLECTION_XY_9( NED_ENU_REFLECTION_XY.indices().replicate<3, 1>() );
                     NED_ENU_REFLECTION_XY_9.indices().middleRows<3>( 3 ).array() += 3;
                     NED_ENU_REFLECTION_XY_9.indices().middleRows<3>( 6 ).array() += 6;
-                    Eigen::DiagonalMatrix<double, 9> NED_ENU_REFLECTION_Z_9(
-                        NED_ENU_REFLECTION_Z.diagonal().replicate<3, 1>() );
+                    Eigen::DiagonalMatrix<double, 9> NED_ENU_REFLECTION_Z_9( NED_ENU_REFLECTION_Z.diagonal().replicate<3, 1>() );
 
                     cov_out = NED_ENU_REFLECTION_XY_9 * ( NED_ENU_REFLECTION_Z_9 * cov_in * NED_ENU_REFLECTION_Z_9 ) *
                               NED_ENU_REFLECTION_XY_9.transpose();
@@ -305,8 +302,7 @@ namespace px4_ros_com
             return cov_out_;
         }
 
-        Eigen::Vector3d transform_static_frame( const Eigen::Vector3d& vec, const Eigen::Vector3d& map_origin,
-                                                const StaticTF transform )
+        Eigen::Vector3d transform_static_frame( const Eigen::Vector3d& vec, const Eigen::Vector3d& map_origin, const StaticTF transform )
         {
             //! Degrees to radians
             static constexpr double DEG_TO_RAD = ( M_PI / 180.0 );
@@ -332,8 +328,7 @@ namespace px4_ros_com
              * where both [East, North, Up] and [∂x, ∂y, ∂z] are local coordinates relative to map origin.
              */
             Eigen::Matrix3d R;
-            R << -sin_lon, cos_lon, 0.0, -cos_lon * sin_lat, -sin_lon * sin_lat, cos_lat, cos_lon * cos_lat,
-                sin_lon * cos_lat, sin_lat;
+            R << -sin_lon, cos_lon, 0.0, -cos_lon * sin_lat, -sin_lon * sin_lat, cos_lat, cos_lon * cos_lat, sin_lon * cos_lat, sin_lat;
 
 
             Eigen::Vector3d out;
