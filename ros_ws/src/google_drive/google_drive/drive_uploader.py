@@ -1,0 +1,59 @@
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+from .upload_photo import upload_image # .upload_photo 
+ 
+class drive_uploader(Node):
+    def __init__(self):
+        super().__init__('drive_upload_service')
+ 
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
+        
+        # I don't believe we need any publishers for this node
+        # create publishers
+        # self.offboard_control_mode_publisher = self.create_publisher(
+                    #OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
+        
+        # create subscribers
+        # I am not sure which part of this is correct, but I think they both work, they are just two different versions.
+        self.drive_upload_subscriber = self.create_subscription(
+            String,                 # Message type --> std_msgs/msg/String
+            '/drive_upload',        # Topic name
+            self.drive_upload_callback, # Callback function
+            10                      # Queue size (QoS depth)
+        )
+ 
+    # Upload media file to google drive
+    def drive_upload_callback(self, msg): 
+        self.get_logger().info(f"I heard: {msg.data}")
+    
+        # this is the part I'm really not sure about, and how it works
+        # this is supposed to be the part that triggers the upload_image() funciton in upload_photo.py
+    
+        # I thought I was supposed to use the commands:
+        # scp media_file, ges "secure copy"
+        # ssh ges python3 uploadMedia.py
+    
+        file_path = msg.data
+    
+        self.get_logger().info(f"Received: {file_path}")
+    
+        try:
+            upload_image(file_path)
+            self.get_logger().info("Upload successful")
+        except Exception as e:
+            self.get_logger().error(f"Upload failed: {e}")
+ 
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = drive_uploader()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
