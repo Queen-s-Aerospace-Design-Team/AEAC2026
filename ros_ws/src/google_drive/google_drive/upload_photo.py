@@ -8,11 +8,11 @@ SCOPES = ['https://www.googleapis.com/auth/drive.file']
 # 🔴 REPLACE THIS WITH YOUR REAL FOLDER ID
 FOLDER_ID = '1yy-xZOe-KUnGH505fWoLm3GsgbwL8CR_'
 
-def upload_image():
+def upload_image(path):
     creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     service = build('drive', 'v3', credentials=creds)
 
-    file_name = 'test_image.jpg'  # image must exist locally
+    file_name = path  # image must exist locally
 
     file_metadata = {
         'name': file_name,
