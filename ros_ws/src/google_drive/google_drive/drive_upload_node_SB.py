@@ -45,7 +45,7 @@ class drive_upload_service(Node):
         self.get_logger().info(f"Received: {file_path}")
     
         try:
-            upload_image()
+            upload_image(file_path)
             self.get_logger().info("Upload successful")
         except Exception as e:
             self.get_logger().error(f"Upload failed: {e}")
