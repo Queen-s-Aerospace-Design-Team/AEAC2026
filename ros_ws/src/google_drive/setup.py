@@ -24,6 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'drive_uploader = google_drive.drive_uploader:main',
         ],
     },
 )

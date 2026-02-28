@@ -1,4 +1,3 @@
-import os
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -33,9 +32,3 @@ def upload_image(path):
 
     print(f"Uploaded to AEAC 2026 Targets ✅")
     print(f"File ID: {file.get('id')}")
-
-if __name__ == '__main__':
-    upload_image()
-
-
-

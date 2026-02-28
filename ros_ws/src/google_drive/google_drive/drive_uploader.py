@@ -2,9 +2,9 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
-from upload_photo import upload_image
+from .upload_photo import upload_image # .upload_photo 
  
-class drive_upload_service(Node):
+class drive_uploader(Node):
     def __init__(self):
         super().__init__('drive_upload_service')
  
@@ -53,21 +53,7 @@ class drive_upload_service(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = drive_upload_service()
+    node = drive_uploader()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
- 
-#not sure which one is right --> both are very similar
-#def main():
-   #rospy.init_node('drive_upload_node')
- 
-   #rospy.Subscriber("/image_path", String, image_callback)
- 
-   #rospy.loginfo("Drive upload node started")
-   #rospy.spin()
- 
- 
-if __name__ == '__main__':
-    main()
-   
