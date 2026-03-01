@@ -15,3 +15,8 @@ Things to watch out for: If it crashes or gets into a bad state, you get those A
 This is StereoLabs' own daemon, specifically for ZED X series cameras (which is what you have). It handles hardware-level features specific to the ZED X — things like the hardware encoder (H264/H265), sensor synchronization, and firmware communication.
 
 `sudo systemctl status zed_x_daemon` / `sudo systemctl restart zed_x_daemon`
+
+
+Link to gorilla keyframes: https://drive.google.com/file/d/1ap4YKGPNaz5vZe47Uc8PwJ2Cljv6ukbR/view?usp=sharing
+
+
