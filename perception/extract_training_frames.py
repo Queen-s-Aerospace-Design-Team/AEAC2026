@@ -4,8 +4,8 @@ extract_training_frames.py — Run on Jetson after recording an SVO
 Extracts every Nth frame as lossless PNG for Roboflow upload.
 
 Usage:
-    python extract_training_frames.py --svo flight_01.svo2
-    python extract_training_frames.py --svo flight_01.svo2 --out ./training_frames --every_n 15
+    python3 extract_training_frames.py --svo recordings/flight_01.svo2
+    python3 extract_training_frames.py --svo recordings/flight_01.svo2 --out ./training_frames --every_n 15
 
 
 Defaults:
