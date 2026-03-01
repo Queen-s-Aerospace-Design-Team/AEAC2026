@@ -42,7 +42,7 @@ def main():
         return 1
 
     # Start recording
-    recording_params = sl.RecordingParameters(output_path, sl.SVO_COMPRESSION_MODE.H265_LOSSLESS)    
+    recording_params = sl.RecordingParameters(output_path, sl.SVO_COMPRESSION_MODE.LOSSLESS)    
     err = zed.enable_recording(recording_params)
     if err != sl.ERROR_CODE.SUCCESS:
         print(f"Failed to start recording: {err}")
