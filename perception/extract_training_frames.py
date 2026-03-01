@@ -7,6 +7,7 @@ Usage:
     python extract_training_frames.py --svo flight_01.svo2
     python extract_training_frames.py --svo flight_01.svo2 --out ./training_frames --every_n 15
 
+
 Defaults:
     --every_n 15  → 2 FPS from 30 FPS source (good default for diverse viewpoints)
     --every_n 30  → 1 FPS
@@ -34,7 +35,10 @@ def main():
     )
     args = parser.parse_args()
 
-    os.makedirs(args.out, exist_ok=True)
+    # Create subfolder named after the SVO file (e.g. training_frames/flight_01/)
+    svo_name = os.path.splitext(os.path.basename(args.svo))[0]
+    out_dir = os.path.join(args.out, svo_name)
+    os.makedirs(out_dir, exist_ok=True)
 
     # Open SVO
     zed = sl.Camera()
@@ -50,6 +54,7 @@ def main():
     total_frames = zed.get_svo_number_of_frames()
     expected = total_frames // args.every_n
     print(f"SVO: {total_frames} frames. Extracting every {args.every_n}th → ~{expected} images")
+    print(f"Output: {out_dir}/")
 
     image = sl.Mat()
     frame_num = 0
@@ -59,7 +64,7 @@ def main():
         if frame_num % args.every_n == 0:
             zed.retrieve_image(image, sl.VIEW.LEFT)  # Left camera only
             img_np = image.get_data()[:, :, :3]  # BGRA → BGR
-            cv2.imwrite(os.path.join(args.out, f"frame_{saved:05d}.png"), img_np)
+            cv2.imwrite(os.path.join(out_dir, f"frame_{saved:05d}.png"), img_np)
             saved += 1
 
             if saved % 50 == 0:
@@ -68,7 +73,7 @@ def main():
         frame_num += 1
 
     zed.close()
-    print(f"\nDone. {saved} frames saved to {args.out}/")
+    print(f"\nDone. {saved} frames saved to {out_dir}/")
 
 
 if __name__ == "__main__":
