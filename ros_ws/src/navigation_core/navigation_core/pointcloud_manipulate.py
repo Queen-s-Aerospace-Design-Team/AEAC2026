@@ -1,3 +1,4 @@
+import math
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2, LaserScan
@@ -8,6 +9,22 @@ class pointcloud_manipulate(Node):
     def __init__(self):
         super().__init__('pointcloud_manipulate')
 
+
+        #height of the slice
+        #heigh in meters
+        self.min_height = 0.1
+        self.max_height = 1.0
+        
+        #LaserScan config 
+        #range is in meters
+        self.range_min = 0.1
+        self.range_max = 20.0
+        self.angle_min = -math.pi # -180 deg
+        self.angle_max = math.pi # 180 deg
+        self.angle_change = math.pi / 360 #0.5 deg angle change
+        self.num_bins = int(round((self.angle_max - self.angle_min) / self.angle_change)) #amount of indicies needed to store that data at each angle change
+
+
         #publishers
         self.scan_pub = self.create_publisher(
             LaserScan,
@@ -17,18 +34,20 @@ class pointcloud_manipulate(Node):
 
         #subscribers
         self.subscription = self.create_subscription(
-            PointCloud2,
-            '/depth_camera/points',
-            self.pointcloud_callback,
-            10
+            PointCloud2, #message type
+            '/depth_camera/points', #topic
+            self.pointcloud_callback, #what to do when it receives the message from the subscribed node
+            10 #Qualitly of service (QOS), ignore this
         )
 
         self.get_logger().info('PointCloud Processor node started')
 
-    def pointcloud_callback(self, msg):
+    def pointcloud_callback(self, msg, cloud_msg: PointCloud2):
         self.get_logger().info(
             f'Received point cloud with {msg.width * msg.height} points'
         )
+
+        
 
 def main(args=None):
     rclpy.init(args=args)
