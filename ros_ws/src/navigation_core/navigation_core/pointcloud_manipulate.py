@@ -9,6 +9,7 @@ class pointcloud_manipulate(Node):
     def __init__(self):
         super().__init__('pointcloud_manipulate')
 
+        #slice variables
 
         #height of the slice
         #heigh in meters
@@ -42,10 +43,23 @@ class pointcloud_manipulate(Node):
 
         self.get_logger().info('PointCloud Processor node started')
 
-    def pointcloud_callback(self, msg, cloud_msg: PointCloud2):
-        self.get_logger().info(
-            f'Received point cloud with {msg.width * msg.height} points'
-        )
+    def _cloud_callback(self, cloud_msg: PointCloud2) -> None:
+            pointers_iteration = pc2.read_points(
+                cloud_msg, 
+                field_names = ["x", "y", "z"],
+                skip_nans = True
+            )
+
+            arr_coords = np.array(list(pointers_iteration), dtype=np.float32)
+            #output: [[0,1,2], [3,4,5], ...]
+
+            #edge cases incase there are no points  
+            if len(arr_coords) == 0: 
+                self.get_logger().warn("No points found in the point cloud") 
+            self.get_logger().debug(f"Received point cloud with {len(arr_coords)} points")
+
+            self.arr_coords = arr_coords
+
 
         
 
