@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$REPO_ROOT/deployment/compose.deployment.yml"
 SERVICE_NAME="deploy"
-STARTUP_LOG_LINES="80"
+STARTUP_LOG_LINES="100"
 
 die() {
     echo "Error: $*" >&2
@@ -38,7 +38,7 @@ command -v docker >/dev/null 2>&1 || die "docker is not installed or not in PATH
 docker compose version >/dev/null 2>&1 || die "docker compose plugin is unavailable"
 
 run_compose() {
-    docker compose -f "$COMPOSE_FILE" "$@"
+    docker compose -f $COMPOSE_FILE "$@"
 }
 
 ARG="${1:-up}" # default to up
@@ -47,7 +47,7 @@ case "$ARG" in
     up)
         run_compose up -d --remove-orphans
         echo "Recent startup logs (${STARTUP_LOG_LINES} lines):"
-        run_compose logs --tail="$STARTUP_LOG_LINES"
+        run_compose logs --tail=$STARTUP_LOG_LINES -f
         ;;
     down)
         run_compose down --remove-orphans
@@ -56,13 +56,13 @@ case "$ARG" in
         run_compose restart
         ;;
     logs)
-        run_compose logs -f --tail=200
+        run_compose logs --tail=200 -f
         ;;
     status)
         run_compose ps
         ;;
     attach)
-        CONTAINER_ID="$(run_compose ps -q "$SERVICE_NAME")"
+        CONTAINER_ID="$(run_compose ps -q $SERVICE_NAME)"
         [ -n "$CONTAINER_ID" ] || die "service '$SERVICE_NAME' is not running"
 
         if docker exec -it "$CONTAINER_ID" bash 2>/dev/null; then
