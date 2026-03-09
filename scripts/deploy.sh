@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$REPO_ROOT/deployment/compose.deployment.yml"
+SERVICE_NAME="deploy"
 
 die() {
     echo "Error: $*" >&2
@@ -21,6 +22,7 @@ down     Stop and remove deployment containers
 restart  Restart deployment containers
 logs     Follow deployment logs
 status   Show deployment container status
+attach   Open an interactive shell in the running deployment container
 
 Notes:
 - Uses compose file: $COMPOSE_FILE
@@ -34,7 +36,7 @@ command -v docker >/dev/null 2>&1 || die "docker is not installed or not in PATH
 docker compose version >/dev/null 2>&1 || die "docker compose plugin is unavailable"
 
 run_compose() {
-  docker compose -f "$COMPOSE_FILE" "$@"
+    docker compose -f "$COMPOSE_FILE" "$@"
 }
 
 ARG="${1:-up}" # default to up
@@ -55,12 +57,21 @@ case "$ARG" in
     status)
         run_compose ps
         ;;
+    attach)
+        CONTAINER_ID="$(run_compose ps -q "$SERVICE_NAME")"
+        [ -n "$CONTAINER_ID" ] || die "service '$SERVICE_NAME' is not running"
+
+        if docker exec -it "$CONTAINER_ID" bash 2>/dev/null; then
+            :
+        else
+            docker exec -it "$CONTAINER_ID" sh
+        fi
+        ;;
     -h|--help|help)
         usage
         ;;
     *)
         usage
-        die "unknown command: $ARG
-    "
+        die "unknown command: $ARG"
         ;;
 esac
