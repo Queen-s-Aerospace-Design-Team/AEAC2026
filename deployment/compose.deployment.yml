@@ -28,3 +28,8 @@ services:
       # Set only if ROS participants need to use one domain
       # ROS_DOMAIN_ID: "42"
       # ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
+
+    command: >
+      bash -lc "source /opt/ros/humble/setup.bash &&
+      source /home/qadt-deployment/AEAC2026/ros_ws/install/setup.bash &&
+      ros2 run flight_missions orbit_location"
