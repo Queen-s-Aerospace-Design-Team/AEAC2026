@@ -1,7 +1,7 @@
 name: qadt-devcontainer
 services:
   dev:
-    image: ghcr.io/queen-s-aerospace-design-team/devcontainer-px4:latest
+    image: ghcr.io/queen-s-aerospace-design-team/devcontainer-px4:local
     pull_policy: always
     tty: true
     privileged: true

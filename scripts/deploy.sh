@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$REPO_ROOT/deployment/compose.deployment.yml"
 SERVICE_NAME="deploy"
+STARTUP_LOG_LINES="80"
 
 die() {
     echo "Error: $*" >&2
@@ -13,7 +14,7 @@ die() {
 }
 
 usage() {
-    cat <<USAGE
+    cat <<'USAGE'
 Usage: $(basename "$0") [command]
 
 Commands:
@@ -25,8 +26,9 @@ status   Show deployment container status
 attach   Open an interactive shell in the running deployment container
 
 Notes:
-- Uses compose file: $COMPOSE_FILE
+- Uses compose file: <repo>/deployment/compose.deployment.yml
 - Image pulling behavior is controlled in compose via pull_policy (currently 'missing').
+- After `up`, prints the last STARTUP_LOG_LINES lines (default: 80) for quick startup visibility.
 USAGE
 }
 
@@ -44,6 +46,8 @@ ARG="${1:-up}" # default to up
 case "$ARG" in
     up)
         run_compose up -d --remove-orphans
+        echo "Recent startup logs (${STARTUP_LOG_LINES} lines):"
+        run_compose logs --tail="$STARTUP_LOG_LINES"
         ;;
     down)
         run_compose down --remove-orphans
