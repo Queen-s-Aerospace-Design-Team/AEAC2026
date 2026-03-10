@@ -54,9 +54,10 @@ case "$ARG" in
         ;;
     restart)
         run_compose restart
+        run_compose logs --tail=$STARTUP_LOG_LINES -f
         ;;
     logs)
-        run_compose logs --tail=200 -f
+        run_compose logs --tail=$STARTUP_LOG_LINES -f
         ;;
     status)
         run_compose ps
