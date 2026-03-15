@@ -1,3 +1,12 @@
+#Add ros2 google_drive script 
+#Allow environment variables to be duplicated
+
+x-shared-env: &shared-env
+  NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
+  # Set only if ROS participants need to use one domain
+  # ROS_DOMAIN_ID: "42"
+  # ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
+
 name: qadt-deployment
 
 services:
@@ -23,13 +32,12 @@ services:
       - "/var/nvidia/nvcam/settings:/var/nvidia/nvcam/settings"
       - "/etc/systemd/system/zed_x_daemon.service:/etc/systemd/system/zed_x_daemon.service:ro"
 
-    environment:
-      NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
-      # Set only if ROS participants need to use one domain
-      # ROS_DOMAIN_ID: "42"
-      # ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
+    environment: 
+      <<: *shared-env
+      # other environment variables
 
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&
       source /home/qadt-deployment/AEAC2026/ros_ws/install/setup.bash &&
-      ros2 run flight_missions orbit_location"
+      ros2 run flight_missions orbit_location &&
+      ros2 run google_drive drive_uploader"
