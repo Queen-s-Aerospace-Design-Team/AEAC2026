@@ -15,3 +15,5 @@ build/
 log/
 ros_examples_cpp/
 __pycache__/
+perception/recordings/
+perception/training_frames/
