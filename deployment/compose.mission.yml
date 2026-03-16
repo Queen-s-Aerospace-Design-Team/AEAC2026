@@ -1,11 +1,8 @@
-# Original compose deployment file
-
-# mission, perception, drive
+# compose mission file
 # how to run multiple ros nodes in a container
 # you can also modified the deploy.sh script to have a command like "mission" 
 
 x-shared-env: &shared-env
-  NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
   # Set only if ROS participants need to use one domain
   # ROS_DOMAIN_ID: "42"
   # ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
@@ -24,16 +21,6 @@ services:
     working_dir: /home/qadt-deployment/AEAC2026/ros_ws
     network_mode: host
     privileged: true
-    gpus: all
-    runtime: nvidia
-    shm_size: "2g" # Helpful for camera / vision workloads
-
-    volumes:
-      # ZED X and ZED X Mini on Jetson
-      - "/dev:/dev"
-      - "/tmp:/tmp"
-      - "/var/nvidia/nvcam/settings:/var/nvidia/nvcam/settings"
-      - "/etc/systemd/system/zed_x_daemon.service:/etc/systemd/system/zed_x_daemon.service:ro"
 
     environment: 
       <<: *shared-env
@@ -42,5 +29,4 @@ services:
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&
       source /home/qadt-deployment/AEAC2026/ros_ws/install/setup.bash &&
-      ros2 run flight_missions orbit_location &&
-      ros2 run google_drive drive_uploader"
+      ros2 run flight_missions orbit_location"

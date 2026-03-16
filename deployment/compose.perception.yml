@@ -1,6 +1,4 @@
-# Original compose deployment file
-
-# mission, perception, drive
+# compose perception file
 # how to run multiple ros nodes in a container
 # you can also modified the deploy.sh script to have a command like "mission" 
 
