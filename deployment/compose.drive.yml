@@ -1,30 +1,14 @@
-# compose drive
-# how to run multiple ros nodes in a container
-# you can also modified the deploy.sh script to have a command like "mission" 
+# Compose file for Google Drive uploads
 
-x-shared-env: &shared-env
-  # Set only if ROS participants need to use one domain
-  # ROS_DOMAIN_ID: "42"
-  # ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
-
-name: qadt-deployment
+name: qadt-deployment-drive
 
 services:
-  deploy:
-    image: ghcr.io/queen-s-aerospace-design-team/deployment-px4:latest
-    pull_policy: missing
-    container_name: qadt-deployment
-
-    init: true
-    restart: unless-stopped
-    stop_grace_period: 20s
-    working_dir: /home/qadt-deployment/AEAC2026/ros_ws
-    network_mode: host
-    privileged: true
-
-    environment: 
-      <<: *shared-env
-      # other environment variables
+  drive:
+    <<: *base
+    extends:
+      file: compose.deployment.yml
+      service: base
+    container_name: qadt-upload-drive
 
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&

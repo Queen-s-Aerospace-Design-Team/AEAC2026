@@ -1,44 +1,18 @@
-# compose perception file
-# how to run multiple ros nodes in a container
-# you can also modified the deploy.sh script to have a command like "mission" 
+# Compose file for perception
 
-x-shared-env: &shared-env
-  NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
-  # Set only if ROS participants need to use one domain
-  # ROS_DOMAIN_ID: "42"
-  # ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
-
-name: qadt-deployment
+name: qadt-deployment-perception
 
 services:
-  deploy:
-    image: ghcr.io/queen-s-aerospace-design-team/deployment-px4:latest
-    pull_policy: missing
-    container_name: qadt-deployment
 
-    init: true
-    restart: unless-stopped
-    stop_grace_period: 20s
-    working_dir: /home/qadt-deployment/AEAC2026/ros_ws
-    network_mode: host
-    privileged: true
-    gpus: all
-    runtime: nvidia
-    shm_size: "2g" # Helpful for camera / vision workloads
-
-    volumes:
-      # ZED X and ZED X Mini on Jetson
-      - "/dev:/dev"
-      - "/tmp:/tmp"
-      - "/var/nvidia/nvcam/settings:/var/nvidia/nvcam/settings"
-      - "/etc/systemd/system/zed_x_daemon.service:/etc/systemd/system/zed_x_daemon.service:ro"
-
-    environment: 
-      <<: *shared-env
-      # other environment variables
+  perception:
+    extends:
+      file: compose.deployment.yml
+      service: base_with_gpu
+    container_name: qadt-perception
 
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&
-      source /home/qadt-deployment/AEAC2026/ros_ws/install/setup.bash &&
-      ros2 run flight_missions orbit_location &&
-      ros2 run google_drive drive_uploader"
+      source /home/qadt-deployment/AEAC2026/ros_ws/install/setup.bash"
+      
+# Note sure what scripts to run
+# example: could add "&& ros2 run perception record_svo"

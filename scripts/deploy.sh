@@ -4,7 +4,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-COMPOSE_FILE="$REPO_ROOT/deployment/compose.deployment.yml"
+# Changed from a single compose file to multiple
+COMPOSE_BASE="$REPO_ROOT/deployment/compose.deployment.yml"
+COMPOSE_MISSION="$REPO_ROOT/deployment/compose.mission.yml"
+COMPOSE_PERCEPTION="$REPO_ROOT/deployment/compose.perception.yml"
+COMPOSE_DRIVE="$REPO_ROOT/deployment/compose.drive.yml"
+COMPOSE_UXRCE="$REPO_ROOT/deployment/compose.uxrce.yml"
 SERVICE_NAME="deploy"
 STARTUP_LOG_LINES="100"
 
@@ -33,15 +38,41 @@ USAGE
 }
 
 command -v docker >/dev/null 2>&1 || die "docker is not installed or not in PATH"
-[ -f "$COMPOSE_FILE" ] || die "compose file not found: $COMPOSE_FILE"
+[ -f "$COMPOSE_BASE" ] || die "compose file not found: $COMPOSE_BASE"
 
 docker compose version >/dev/null 2>&1 || die "docker compose plugin is unavailable"
 
+# Added a helper 
+set_compose_files() {
+    case "${2:-all}" in
+        mission)
+            COMPOSE_FILES="-f $COMPOSE_BASE -f $COMPOSE_MISSION"
+            ;;
+        perception)
+            COMPOSE_FILES="-f $COMPOSE_BASE -f $COMPOSE_PERCEPTION"
+            ;;
+        drive)
+            COMPOSE_FILES="-f $COMPOSE_BASE -f $COMPOSE_DRIVE"
+            ;;
+        uxrce)
+            COMPOSE_FILES="-f $COMPOSE_BASE -f $COMPOSE_UXRCE"
+            ;;
+        all|*)
+            COMPOSE_FILES="-f $COMPOSE_BASE \
+                           -f $COMPOSE_MISSION \
+                           -f $COMPOSE_PERCEPTION \
+                           -f $COMPOSE_DRIVE \
+                           -f $COMPOSE_UXRCE"
+            ;;
+    esac
+}
+
 run_compose() {
-    docker compose -f $COMPOSE_FILE "$@"
+    docker compose $COMPOSE_FILES "$@"
 }
 
 ARG="${1:-up}" # default to up
+set_compose_files "$@"
 
 case "$ARG" in
     up)
