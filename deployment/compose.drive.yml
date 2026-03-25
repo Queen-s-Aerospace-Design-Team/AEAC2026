@@ -1,7 +1,5 @@
 # Compose file for Google Drive uploads
 
-name: qadt-deployment-drive
-
 services:
   drive:
     extends:
@@ -12,5 +10,5 @@ services:
 
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&
-      source /home/qadt-deployment/AEAC2026/ros_ws/install/setup.bash &&
+      source /home/qadt-deploy/AEAC2026/ros_ws/install/setup.bash &&
       ros2 run google_drive drive_uploader"

@@ -7,7 +7,7 @@ services:
     image: ghcr.io/queen-s-aerospace-design-team/deployment-px4:latest
     pull_policy: missing
     init: true
-    restart: unless-stopped
+    restart: on-failure
     stop_grace_period: 20s
     working_dir: /home/qadt-deploy/AEAC2026/ros_ws
     network_mode: host
@@ -17,9 +17,9 @@ services:
     extends:
       service: base
 
-    gpus: all
-    runtime: nvidia
-    shm_size: "2g" # Helpful for camera / vision workloads
+    # gpus: all
+    # runtime: nvidia
+    # shm_size: "2g" # Helpful for camera / vision workloads
 
 # Set only if ROS participants need to use one domain
 # environment:

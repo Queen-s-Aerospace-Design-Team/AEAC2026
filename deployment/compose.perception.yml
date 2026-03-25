@@ -1,7 +1,5 @@
 # Compose file for perception
 
-name: qadt-deployment-perception
-
 services:
   perception:
     extends:
@@ -23,7 +21,7 @@ services:
 
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&
-      source /home/qadt-deployment/AEAC2026/ros_ws/install/setup.bash"
+      source /home/qadt-deploy/AEAC2026/ros_ws/install/setup.bash"
       
 # Note sure what scripts to run
 # example: could add "&& ros2 run perception record_svo"

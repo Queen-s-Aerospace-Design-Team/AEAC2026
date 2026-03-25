@@ -1,7 +1,5 @@
 # Compose file for MicroXRCEDSS
 
-name: qadt-deployment-xrce
-
 services:
   uxrce:
     extends:
