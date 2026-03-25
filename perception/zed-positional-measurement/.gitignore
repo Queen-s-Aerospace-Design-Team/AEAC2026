@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+runs/
+test-output/
+.tmp-tests/
+*.svo
+*.svo2
+*.area
