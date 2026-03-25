@@ -17,9 +17,9 @@ services:
     extends:
       service: base
 
-    # gpus: all
-    # runtime: nvidia
-    # shm_size: "2g" # Helpful for camera / vision workloads
+    gpus: all
+    runtime: nvidia
+    shm_size: "2g" # Helpful for camera / vision workloads
 
 # Set only if ROS participants need to use one domain
 # environment:
