@@ -3,7 +3,7 @@
 name: qadt-deployment-xrce
 
 services:
-  uXRCEAgent:
+  uxrce:
     extends:
       file: compose.deployment.yml
       service: base

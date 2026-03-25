@@ -4,11 +4,11 @@ name: qadt-deployment-drive
 
 services:
   drive:
-    <<: *base
     extends:
       file: compose.deployment.yml
       service: base
-    container_name: qadt-upload-drive
+      
+    container_name: drive-uploader
 
     command: >
       bash -lc "source /opt/ros/humble/setup.bash &&

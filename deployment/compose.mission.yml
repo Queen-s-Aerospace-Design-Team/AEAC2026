@@ -9,6 +9,7 @@ services:
     extends:
       file: compose.deployment.yml
       service: base
+      
     container_name: qadt-mission
 
     command: >

@@ -4,30 +4,26 @@ name: qadt-deployment-base
 
 services:
   base:
-    # Set only if ROS participants need to use one domain
-    # ROS_DOMAIN_ID: "42"
-    # ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
     image: ghcr.io/queen-s-aerospace-design-team/deployment-px4:latest
     pull_policy: missing
     init: true
     restart: unless-stopped
     stop_grace_period: 20s
-    working_dir: /home/qadt-deployment/AEAC2026/ros_ws
+    working_dir: /home/qadt-deploy/AEAC2026/ros_ws
     network_mode: host
-    privileged: true
-    volumes:
-      # ZED X and ZED X Mini on Jetson
-      - "/dev:/dev"
-      - "/tmp:/tmp"
-      - "/var/nvidia/nvcam/settings:/var/nvidia/nvcam/settings"
-      - "/etc/systemd/system/zed_x_daemon.service:/etc/systemd/system/zed_x_daemon.service:ro"
-    environment:
-      NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
-      # other environment variables
 
+  # GPU to be used in perception workflows
   base_with_gpu:
     extends:
       service: base
+
     gpus: all
     runtime: nvidia
     shm_size: "2g" # Helpful for camera / vision workloads
+
+# Set only if ROS participants need to use one domain
+# environment:
+#   ROS_DOMAIN_ID: "42"
+#   ROS_AUTOMATIC_DISCOVERY_RANGE: SUBNET
+# Optional:
+#   ROS_LOCALHOST_ONLY: "1"
