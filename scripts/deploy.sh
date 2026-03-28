@@ -9,6 +9,7 @@ COMPOSE_MISSION="$REPO_DEPLOYMENT_DIR/compose.mission.yml"
 COMPOSE_PERCEPTION="$REPO_DEPLOYMENT_DIR/compose.perception.yml"
 COMPOSE_DRIVE="$REPO_DEPLOYMENT_DIR/compose.drive.yml"
 COMPOSE_UXRCE="$REPO_DEPLOYMENT_DIR/compose.uxrce.yml"
+COMPOSE_HARDWARE="$REPO_DEPLOYMENT_DIR/compose.hardware.yml"
 
 STARTUP_LOG_LINES="100"
 CMD="${1:-up}" # CMD defaults to 'up'
@@ -35,7 +36,7 @@ status   Show deployment container status
 attach   Open an interactive shell in the running deployment container
 
 Notes:
-- target: all|mission|perception|drive|uxrce
+- target: all|mission|perception|drive|uxrce|hardware
 - attach defaults to mission
 - logs/restart use target as the service when target != all
 - Image pulling behavior is controlled in compose via pull_policy (currently 'missing').
@@ -70,11 +71,15 @@ set_compose_files() {
         uxrce)
             COMPOSE_FILES="-f $COMPOSE_UXRCE"
             ;;
+        hardware)
+            COMPOSE_FILES="-f $COMPOSE_HARDWARE"
+            ;;
         all|*)
             COMPOSE_FILES="-f $COMPOSE_MISSION \
                            -f $COMPOSE_PERCEPTION \
                            -f $COMPOSE_DRIVE \
-                           -f $COMPOSE_UXRCE"
+                           -f $COMPOSE_UXRCE \
+                           -f $COMPOSE_HARDWARE"
             ;;
     esac
 }
