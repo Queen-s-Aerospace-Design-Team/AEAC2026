@@ -1,0 +1,14 @@
+# Compose file for Google Drive uploads
+
+services:
+  drive:
+    extends:
+      file: compose.deployment.yml
+      service: base
+      
+    container_name: drive-uploader
+
+    command: >
+      bash -lc "source /opt/ros/humble/setup.bash &&
+      source /home/qadt-deploy/AEAC2026/ros_ws/install/setup.bash &&
+      ros2 run google_drive drive_uploader"

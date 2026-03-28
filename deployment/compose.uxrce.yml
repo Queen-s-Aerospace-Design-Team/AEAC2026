@@ -1,0 +1,12 @@
+# Compose file for MicroXRCEDSS
+
+services:
+  uxrce:
+    extends:
+      file: compose.deployment.yml
+      service: base
+
+    container_name: qadt-uxrce-agent
+    
+    command: >
+      MicroXRCEAgent udp4 -p 8888

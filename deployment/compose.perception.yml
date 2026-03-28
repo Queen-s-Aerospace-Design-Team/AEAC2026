@@ -1,0 +1,27 @@
+# Compose file for perception
+
+services:
+  perception:
+    extends:
+      file: compose.deployment.yml
+      service: base_with_gpu
+
+    container_name: qadt-perception
+    privileged: true
+
+    volumes:
+      # ZED X and ZED X Mini on Jetson
+      - "/dev:/dev"
+      - "/tmp:/tmp"
+      - "/var/nvidia/nvcam/settings:/var/nvidia/nvcam/settings"
+      - "/etc/systemd/system/zed_x_daemon.service:/etc/systemd/system/zed_x_daemon.service:ro"
+
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,video
+
+    command: >
+      bash -lc "source /opt/ros/humble/setup.bash &&
+      source /home/qadt-deploy/AEAC2026/ros_ws/install/setup.bash"
+      
+# Note sure what scripts to run
+# example: could add "&& ros2 run perception record_svo"

@@ -1,0 +1,16 @@
+# compose mission file
+# how to run multiple ros nodes in a container
+# you can also modified the deploy.sh script to have a command like "mission"
+
+services:
+  mission:
+    extends:
+      file: compose.deployment.yml
+      service: base
+      
+    container_name: qadt-mission
+
+    command: >
+      bash -lc "source /opt/ros/humble/setup.bash &&
+      source /home/qadt-deploy/AEAC2026/ros_ws/install/setup.bash &&
+      ros2 run flight_missions orbit_location"
