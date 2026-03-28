@@ -13,19 +13,17 @@ token.json
 install/
 build/
 log/
-ros_examples_cpp/
-__pycache__/
-perception/recordings/
-perception/training_frames/
 
-#perception
-__pycache__/
+# Perception
 *.py[cod]
-.pytest_cache/
-
-runs/
-test-output/
-.tmp-tests/
 *.svo
 *.svo2
 *.area
+
+__pycache__/
+.pytest_cache/
+test-output/
+.tmp-tests/
+perception/recordings/
+perception/training_frames/
+runs/
