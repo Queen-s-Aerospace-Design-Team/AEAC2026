@@ -11,10 +11,10 @@ permissions:
 
 jobs:
   build-and-push:
-    # You can change this to whichever environment we need to run it on
+    # Can change later to match the correct environment
     runs-on: ubuntu-latest
-
     steps:
+      # Checkout AEAC2026
       - name: Checkout AEAC2026 repo
         uses: actions/checkout@v4
       - name: Checkout containers repo
@@ -30,10 +30,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        #
-      - name: Debug file structure
+      - name: Debug containers repo structure
         run: ls -R ./containers
-        #
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -41,7 +39,4 @@ jobs:
           file: ./containers/deployment-px4/Dockerfile
           push: true
           tags: |
-            ghcr.io/queen-s-aerospace-design-team/deployment-px4:test-${{ github.ref_name }}
-            
-            
-  
+            ghcr.io/queen-s-aerospace-design-team/deployment-px4:test-${{ github.ref_name//\//- }}
