@@ -35,7 +35,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./containers
+          context: ./containers/deployment-px4
           file: ./containers/deployment-px4/Dockerfile
           push: true
           tags: ghcr.io/queen-s-aerospace-design-team/deployment-px4:test-${{ github.ref_name }}
