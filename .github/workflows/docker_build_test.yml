@@ -3,8 +3,7 @@ name: Build and Publish deployment-px4
 on:
   push:
     branches:
-      - main
-      - 51-create-cicd-pipeline-under-aeac2026-to-build-and-publish-deployment-px4-docker-image-after-each-commit
+      - "*"
 
 permissions:
   contents: read
