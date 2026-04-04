@@ -3,7 +3,7 @@ name: Build and Publish deployment-px4
 on:
   push:
     branches:
-      - "*"
+      - 51-create-cicd-pipeline-under-aeac2026-to-build-and-publish-deployment-px4-docker-image-after-each-commit
 
 permissions:
   contents: read
@@ -34,7 +34,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./containers
-          file: ./containers/deployment-px4/Dockerfile   # adjust if needed
-          push: false
+          file: ./containers/deployment-px4/Dockerfile
+          push: true
           tags: |
-            ghcr.io/queen-s-aerospace-design-team/deployment-px4:latest
+            ghcr.io/queen-s-aerospace-design-team/deployment-px4:test-${{ github.ref_name }}
+            
+            
+  
