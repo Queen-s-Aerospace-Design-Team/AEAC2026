@@ -19,37 +19,41 @@ class drive_uploader(Node):
         # create publishers
         # self.offboard_control_mode_publisher = self.create_publisher(
                     #OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
-
-
         
         # create subscribers
-        self.drive_upload_subscriber = self.create_subscription(
-            String,                 # Message type --> std_msgs/msg/String
-            '/drive_upload',        # Topic name
-            self.drive_upload_callback, # Callback function
-            10                      # Queue size (QoS depth)
+        # Create service
+        self.srv = self.create_service(
+            UploadPhoto,
+            'drive_upload',   # service name
+            self.drive_upload_callback
         )
+
+        self.get_logger().info("Drive upload service ready.")
+
+
+
  
     # Upload media file to google drive
-    def drive_upload_callback(self, msg):     
+    def drive_upload_callback(self, request, response): 
+    
         # this is the part I'm really not sure about, and how it works
         # this is supposed to be the part that triggers the upload_image() funciton in upload_photo.py
     
-        # I thought I was supposed to use the commands:
-        # scp media_file, ges "secure copy"
-        # ssh ges python3 uploadMedia.py
-
-        self.get_logger().info(f"I heard: {msg.data}")
-    
-        file_path = msg.data
+        file_path = request.file_path
     
         self.get_logger().info(f"Received: {file_path}")
     
         try:
             upload_image(file_path)
-            self.get_logger().info("Upload successful")
+            response.sucess = True
+            response.message ="Upload successful"
+            self.get_logger().info("Upload Successful")
         except Exception as e:
+            response.sucess = False
+            response.message = str(e)
             self.get_logger().error(f"Upload failed: {e}")
+        
+         return response
  
 
 def main(args=None):
@@ -58,3 +62,4 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
+
