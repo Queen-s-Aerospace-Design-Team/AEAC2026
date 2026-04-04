@@ -1,0 +1,41 @@
+name: Build and Publish deployment-px4
+
+on:
+  push:
+    branches:
+      - main
+      - 51-create-cicd-pipeline-under-aeac2026-to-build-and-publish-deployment-px4-docker-image-after-each-commit
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    # You can change this to whichever environment we need to run it on
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout AEAC2026 repo
+        uses: actions/checkout@v4
+      - name: Checkout containers repo
+        uses: actions/checkout@v4
+        with:
+          repository: queen-s-aerospace-design-team/containers
+          path: containers
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./containers
+          file: ./containers/deployment-px4/Dockerfile   # adjust if needed
+          push: false
+          tags: |
+            ghcr.io/queen-s-aerospace-design-team/deployment-px4:latest
