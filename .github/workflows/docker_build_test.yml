@@ -39,5 +39,5 @@ jobs:
           file: ./containers/deployment-px4/Dockerfile
           push: true
           tags: |
-            tags: |
+            tags:
               ghcr.io/queen-s-aerospace-design-team/deployment-px4:test-${{ github.ref_name }}
