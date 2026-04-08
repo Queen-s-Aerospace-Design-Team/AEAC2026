@@ -1,0 +1,27 @@
+# Compose file for hardware-controllering processes
+
+services:
+  hardware-controller:
+    extends:
+      file: compose.deployment.yml
+      service: base
+
+    container_name: qadt-hardware-controller
+    privileged: true
+
+    devices:
+      - /dev/gpiochip0:/dev/gpiochip0 # Necessary for enabiling GPIO
+
+    volumes:
+      - /proc/device-tree/compatible:/proc/device-tree/compatible:ro
+      - /proc/device-tree/chosen:/proc/device-tree/chosen:ro
+
+    command: >
+      bash -lc "source /opt/ros/humble/setup.bash &&
+      source /home/qadt-deploy/AEAC2026/ros_ws/install/setup.bash &&
+      ros2 run hardware_controllers gimbal_controller --ros-args \
+        -p dry_run:=false \
+        -p pitch_pwm_pin:=33 \
+        -p water_gpio_pin:=31"
+
+# Modify the gimbal controller arguments as necessary

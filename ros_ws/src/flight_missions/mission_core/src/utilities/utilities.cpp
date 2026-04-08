@@ -4,7 +4,6 @@ namespace Utilities
 {
     bool waitForServices( rclcpp::Node* node, const std::vector<rclcpp::ClientBase::SharedPtr>& services, std::chrono::seconds timeout )
     {
-
         constexpr uint8_t maxValidationRequests = 120; // 2 min to validate all services
         uint8_t cntr                            = 0;
 
