@@ -1,0 +1,6 @@
+#define the inputs and outputs for the service file here
+
+string file_path 
+---
+bool success
+string message
