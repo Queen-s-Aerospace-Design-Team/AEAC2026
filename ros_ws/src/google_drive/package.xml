@@ -7,8 +7,18 @@
   <maintainer email="anthonyjb5228@gmail.com">qadt</maintainer>
   <license>TODO: License declaration</license>
 
-  <depend>std_msgs</depend>
-  <depend>rclpy</depend>
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>google_drive_interfaces</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>python3-google-auth</exec_depend>
+  <exec_depend>python3-google-auth-oauthlib</exec_depend>
+  <exec_depend>python3-googleapi</exec_depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ros2launch</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
