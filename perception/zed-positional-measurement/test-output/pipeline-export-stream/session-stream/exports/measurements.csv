@@ -1,0 +1,2 @@
+session_id,segment_id,frame_idx,timestamp_ns,entity_type,label,color_or_corner_id,detector_confidence,pixel_u,pixel_v,bbox_xyxy,pose_world_xyz,pose_world_xyzw,tracking_state,tracking_confidence,point_world_xyz,point_camera_xyz,depth_m,plane_id,plane_status,plane_center_xyz,plane_normal_xyz,plane_equation_abcd,plane_type,quality_flags
+session-stream,segment-00001,0,100,paper,paper,red,0.9,30,20,"20,10,40,30","1.0,0.0,0.0","0.0,0.0,0.0,1.0",OK,99,"2.0,4.0,6.0","1.0,4.0,6.0",6.0,plane-0001,SUCCESS,"0.0,0.0,0.0","0.0,0.0,1.0","0.0,0.0,1.0,0.0",VERTICAL,clean

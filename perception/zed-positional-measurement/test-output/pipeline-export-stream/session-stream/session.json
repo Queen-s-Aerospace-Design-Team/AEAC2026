@@ -1,0 +1,91 @@
+{
+  "config": {
+    "corners": {
+      "detections_dir": null,
+      "patch_radius_px": 2
+    },
+    "paper": {
+      "classes": {},
+      "confidence_threshold": 25,
+      "external_detections_dir": null,
+      "mode": "external_boxes",
+      "native_yolo_class_count": null,
+      "native_yolo_input_size": null,
+      "native_yolo_onnx_path": null
+    },
+    "plane_detection": {
+      "dedupe_center_distance_m": 0.4,
+      "dedupe_normal_angle_deg": 10.0,
+      "enable_scene_probes": true,
+      "include_floor_plane": true,
+      "scene_probe_points_normalized": [
+        [
+          0.16666666666666666,
+          0.16666666666666666
+        ],
+        [
+          0.5,
+          0.16666666666666666
+        ],
+        [
+          0.8333333333333334,
+          0.16666666666666666
+        ],
+        [
+          0.16666666666666666,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.8333333333333334,
+          0.5
+        ],
+        [
+          0.16666666666666666,
+          0.8333333333333334
+        ],
+        [
+          0.5,
+          0.8333333333333334
+        ],
+        [
+          0.8333333333333334,
+          0.8333333333333334
+        ]
+      ]
+    },
+    "recording": {
+      "compression_mode": "H264",
+      "coordinate_system": "RIGHT_HANDED_Z_UP_X_FORWARD",
+      "coordinate_units": "METER",
+      "depth_mode": "NEURAL",
+      "enable_svo_recording": true,
+      "fps": 30,
+      "resolution": "HD1080",
+      "segment_duration_s": 20
+    },
+    "runtime": {
+      "detector_image_size": [
+        50,
+        25
+      ],
+      "process_spawn": true,
+      "root_dir": "/Users/matthewlones/git/AEAC2026/perception/zed-positional-measurement/test-output/pipeline-export-stream",
+      "session_id": "session-stream"
+    },
+    "tracking": {
+      "enable_2d_ground_mode": false,
+      "enable_imu_fusion": true,
+      "enable_pose_smoothing": false,
+      "mode": "vslam_map",
+      "positional_tracking_mode": "GEN_3",
+      "set_floor_as_origin": false,
+      "set_gravity_as_origin": true
+    }
+  },
+  "created_at_ns": 1778539365168199000,
+  "session_id": "session-stream"
+}

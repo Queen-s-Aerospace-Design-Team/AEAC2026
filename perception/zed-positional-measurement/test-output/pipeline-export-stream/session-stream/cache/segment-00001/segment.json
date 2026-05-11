@@ -1,0 +1,17 @@
+{
+  "closed_at_ns": 2,
+  "error_message": null,
+  "final_frame_path": "/Users/matthewlones/git/AEAC2026/perception/zed-positional-measurement/test-output/pipeline-export-stream/session-stream/cache/segment-00001/frames.final.jsonl",
+  "final_measurement_path": "/Users/matthewlones/git/AEAC2026/perception/zed-positional-measurement/test-output/pipeline-export-stream/session-stream/cache/segment-00001/measurements.final.jsonl",
+  "final_pose_path": "/Users/matthewlones/git/AEAC2026/perception/zed-positional-measurement/test-output/pipeline-export-stream/session-stream/cache/segment-00001/poses.final.jsonl",
+  "frame_count": 1,
+  "provisional_frame_path": null,
+  "provisional_measurement_path": null,
+  "provisional_pose_path": null,
+  "segment_id": "segment-00001",
+  "session_id": "session-stream",
+  "started_at_ns": 1,
+  "status": "finalized",
+  "svo_path": "/Users/matthewlones/git/AEAC2026/perception/zed-positional-measurement/test-output/pipeline-export-stream/session-stream/segments/segment-00001.svo2",
+  "updated_at_ns": 1778539365170206000
+}

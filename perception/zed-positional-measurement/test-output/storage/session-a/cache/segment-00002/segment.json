@@ -1,0 +1,17 @@
+{
+  "closed_at_ns": 4,
+  "error_message": null,
+  "final_frame_path": null,
+  "final_measurement_path": null,
+  "final_pose_path": null,
+  "frame_count": 12,
+  "provisional_frame_path": null,
+  "provisional_measurement_path": null,
+  "provisional_pose_path": null,
+  "segment_id": "segment-00002",
+  "session_id": "session-a",
+  "started_at_ns": 3,
+  "status": "processed",
+  "svo_path": "/Users/matthewlones/git/AEAC2026/perception/zed-positional-measurement/test-output/storage/session-a/segments/segment-00002.svo2",
+  "updated_at_ns": null
+}
