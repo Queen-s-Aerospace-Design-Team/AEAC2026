@@ -251,6 +251,12 @@ class MeasurementPipeline:
             store.write_pose_cache(segment_id, finalized=finalized, rows=pose_rows)
             store.write_measurement_cache(segment_id, finalized=finalized, rows=measurement_rows)
             store.write_frame_cache(segment_id, finalized=finalized, rows=frame_rows)
+            if not finalized:
+                # Live segment-streamed handoff: append this segment's provisional
+                # frames to stream/frames.jsonl as soon as it finishes. Lucas can
+                # tail the file during flight; finalize_session will later
+                # overwrite it with the area-map-corrected final versions.
+                store.append_frame_stream(frame_rows)
             if detection_context.enabled:
                 self.adapter.disable_paper_detection(camera)
             save_area = store.paths.area_map_path if tracking_mode == "vslam_map" else None

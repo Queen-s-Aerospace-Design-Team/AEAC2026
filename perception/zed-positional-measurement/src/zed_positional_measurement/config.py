@@ -77,7 +77,7 @@ class PlaneDetectionConfig:
     scene_probe_points_normalized: tuple[tuple[float, float], ...] = field(
         default_factory=_default_scene_probe_points_normalized
     )
-    include_floor_plane: bool = False
+    include_floor_plane: bool = True
     dedupe_normal_angle_deg: float = 10.0
     dedupe_center_distance_m: float = 0.4
 

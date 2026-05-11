@@ -277,6 +277,7 @@ class PipelineTests(unittest.TestCase):
         config = PipelineConfig.from_dict(
             {
                 "paper": {"mode": "external_boxes"},
+                "plane_detection": {"include_floor_plane": False},
                 "runtime": {
                     "root_dir": str(output_dir),
                     "session_id": "session-b",
@@ -524,6 +525,7 @@ class PipelineTests(unittest.TestCase):
         config = PipelineConfig.from_dict(
             {
                 "paper": {"mode": "external_boxes"},
+                "plane_detection": {"include_floor_plane": False},
                 "runtime": {
                     "root_dir": str(output_dir),
                     "session_id": "session-probes",

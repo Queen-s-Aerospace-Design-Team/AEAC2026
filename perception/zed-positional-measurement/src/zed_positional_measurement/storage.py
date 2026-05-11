@@ -33,6 +33,16 @@ def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
             handle.write("\n")
 
 
+def append_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
+    """Append-only JSONL writer. Used for the live segment-streamed handoff
+    to Lucas — each finished segment's frames get appended to the same file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, sort_keys=True))
+            handle.write("\n")
+
+
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
@@ -221,6 +231,14 @@ class SessionStore:
     ) -> Path:
         path = self.paths.segment_frame_cache_path(segment_id, finalized=finalized)
         write_jsonl(path, (row.to_dict() for row in rows))
+        return path
+
+    def append_frame_stream(self, rows: Iterable[FrameRecord]) -> Path:
+        """Append frames to the live Lucas handoff at stream/frames.jsonl.
+        Called once per segment as soon as the worker finishes processing it,
+        so the file grows during flight with ~segment_duration_s latency."""
+        path = self.paths.frames_jsonl_path
+        append_jsonl(path, (row.to_dict() for row in rows))
         return path
 
     def write_measurement_cache(

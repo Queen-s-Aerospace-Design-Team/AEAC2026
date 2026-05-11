@@ -3,6 +3,7 @@ import time
 import numpy as np
 from sklearn.cluster import DBSCAN
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 
 # Constants to tune: -------------------------------------------------------------
@@ -14,6 +15,9 @@ min_samples_pt = 5              # DBSCAN minimum samples per point cluster
 eps_pl = 0.2                    # DBSCAN clustering radius, unitless
 min_samples_pl = 3              # DBSCAN minimum samples per plane cluster
 eps_gr = 0.15                   # DBSCAN clustering radius for ground plane in metres
+NORMAL_DISTANCE_WEIGHT = 0.3    # scales signed-distance-from-origin (m) into the
+                                # same magnitude range as unit-normal components
+                                # when clustering planes in 4D (n, d) space
 
 # Data Structures: -------------------------------------------------------
 
@@ -106,7 +110,9 @@ def parse_paper(p: dict, plane_lookup: dict) -> Optional[PaperDetection]:
 
 def parse_frame(raw: dict) -> Optional[Frame]:
     """Parse a single frame from the JSONL stream."""
-    if raw.get("tracking_state") != "OK":
+    # endswith("OK") matches the producer's own check (sdk/pipeline both use
+    # endswith), so we don't silently disagree on OK_RELOCALIZED-style variants.
+    if not raw.get("tracking_state", "").endswith("OK"):
         return None
 
     # Build raw plane lookup table for paper parsing (raw dicts keyed by plane_id)
@@ -235,9 +241,43 @@ class DetectionAccumulator:
 #   tail_frames  — for live reading during flight
 #   ingest_json_file — for offline testing
 
+def _infer_session_root(filepath: str) -> Optional[Path]:
+    """If filepath looks like <root>/stream/frames.jsonl, return <root>."""
+    path = Path(filepath)
+    if path.parent.name == "stream":
+        return path.parent.parent
+    return None
+
+
+def verify_coordinate_system(session_root: Optional[Path]) -> None:
+    """
+    Assert the producer recorded with Z-up coordinates. Every downstream
+    geometry call here (UP_VECTOR, ground_z from xyz[2], surface classifier,
+    wall projections) assumes Z-up; if the producer ever switches coord
+    systems, the answers go silently wrong. Better to fail loudly at parse.
+    """
+    if session_root is None:
+        return  # caller didn't give us a session dir; skip the check
+    meta_path = session_root / "session.json"
+    if not meta_path.exists():
+        return  # not a full session directory; nothing to verify
+    with open(meta_path, "r") as f:
+        meta = json.load(f)
+    cs = meta.get("config", {}).get("recording", {}).get("coordinate_system")
+    if cs is not None and cs != "RIGHT_HANDED_Z_UP_X_FORWARD":
+        raise ValueError(
+            f"circle_processing assumes Z-up coordinates but the session was "
+            f"recorded with coordinate_system={cs!r}. Re-record with "
+            f"recording.coordinate_system='RIGHT_HANDED_Z_UP_X_FORWARD' or "
+            f"transform the JSONL stream before passing it in."
+        )
+
+
 def tail_frames(filepath: str, accumulator: DetectionAccumulator) -> DetectionAccumulator:
     """Read frames live as they are appended during flight.
     Note: runs an infinite loop — intended for use in a background thread."""
+    verify_coordinate_system(_infer_session_root(filepath))
+
     frames_parsed  = 0
     frames_skipped = 0
 
@@ -267,6 +307,8 @@ def tail_frames(filepath: str, accumulator: DetectionAccumulator) -> DetectionAc
 
 def ingest_json_file(filepath: str) -> DetectionAccumulator:
     """Read a completed JSONL file — useful for offline testing."""
+    verify_coordinate_system(_infer_session_root(filepath))
+
     accumulator    = DetectionAccumulator()
     frames_parsed  = 0
     frames_skipped = 0
@@ -343,17 +385,61 @@ def cluster_papers(data: dict) -> list[dict]:
     return clusters
 
 
+def canonicalize_plane(plane: DetectedPlane) -> DetectedPlane:
+    """
+    Flip the plane normal into a canonical hemisphere so two observations of the
+    same wall — one with ZED's normal pointing toward the camera, the other with
+    the normal flipped after the camera moved past it — don't get treated as two
+    different walls in clustering. The equation coefficients are flipped to
+    match so plane math stays correct.
+    """
+    n_raw = np.asarray(plane.normal, dtype=float)
+    n_norm = float(np.linalg.norm(n_raw))
+    if n_norm < 1e-9:
+        return plane
+    n = n_raw / n_norm
+    if n[int(np.argmax(np.abs(n)))] < 0:
+        n = -n
+        eq = [-plane.equation[0], -plane.equation[1], -plane.equation[2], -plane.equation[3]]
+    else:
+        eq = list(plane.equation)
+    return DetectedPlane(
+        plane_id         = plane.plane_id,
+        normal           = n,
+        equation         = eq,
+        plane_type       = plane.plane_type,
+        source           = plane.source,
+        center_world_xyz = plane.center_world_xyz,
+    )
+
+
 def cluster_planes(planes: list[DetectedPlane]) -> list[DetectedPlane]:
     """
-    Cluster plane detections by normal direction to find unique wall planes.
-    Returns one representative plane per unique wall.
+    Cluster plane detections by normal direction AND signed distance, so two
+    parallel walls (e.g. opposite walls of a room) don't collapse into a single
+    cluster. Returns one representative plane per unique wall.
     """
     if not planes:
         return []
 
-    normals = np.array([p.normal for p in planes])
+    # Sign-canonicalize first; otherwise a single wall observed from both sides
+    # becomes two clusters with opposite normals.
+    canon = [canonicalize_plane(p) for p in planes]
 
-    labels = DBSCAN(eps_pl, min_samples=min_samples_pl).fit_predict(normals) 
+    # 4D feature: [nx, ny, nz, d_scaled] where d is the canonical signed distance
+    # from origin (d = -n·c for a point c on the plane). Scaling brings meters
+    # into the same magnitude band as unit-normal components.
+    features = np.array([
+        [
+            p.normal[0],
+            p.normal[1],
+            p.normal[2],
+            (-float(np.dot(p.normal, p.center_world_xyz))) * NORMAL_DISTANCE_WEIGHT,
+        ]
+        for p in canon
+    ])
+
+    labels = DBSCAN(eps_pl, min_samples=min_samples_pl).fit_predict(features)
 
     clustered = []
     for label in set(labels):
@@ -363,12 +449,10 @@ def cluster_planes(planes: list[DetectedPlane]) -> list[DetectedPlane]:
         mask = labels == label
         indices = np.where(mask)[0]
 
-        # Pick the plane with the most central normal as representative
-        cluster_normals = normals[mask]
-        mean_normal     = cluster_normals.mean(axis=0)
-        mean_normal     = mean_normal / np.linalg.norm(mean_normal)
-        dists           = np.linalg.norm(cluster_normals - mean_normal, axis=1)
-        best            = planes[indices[np.argmin(dists)]]
+        cluster_features = features[mask]
+        mean_feature     = cluster_features.mean(axis=0)
+        dists            = np.linalg.norm(cluster_features - mean_feature, axis=1)
+        best             = canon[indices[int(np.argmin(dists))]]
 
         clustered.append(best)
 
@@ -382,35 +466,41 @@ def find_ground_plane(all_planes: list[DetectedPlane]) -> Optional[DetectedPlane
     Find the ground plane from accumulated flight planes.
 
     Strategy:
-      1. Prefer planes tagged as floor_query — ZED ran find_floor_plane()
-      2. Fall back to any HORIZONTAL planes, pick the lowest cluster
-      3. Return None if no horizontal planes found
+      1. Prefer planes tagged source=="floor" — ZED's find_floor_plane() result.
+         (The producer's PlaneSource literal is "floor"; see models.py.)
+      2. Fall back to any HORIZONTAL planes, pick the lowest cluster.
+      3. Return None if no horizontal planes found.
+
+    The returned plane's equation uses the measured normal, not a hardcoded
+    [0,0,1] — that way corner intersections stay accurate even if gravity
+    isn't perfectly aligned with +Z in the session frame.
     """
 
-    # Step 1: try floor_query planes first
+    # Step 1: try floor-query planes first
     floor_queries = [
         p for p in all_planes
-        if p.source == "floor_query" and p.plane_type == "HORIZONTAL"
+        if p.source == "floor" and p.plane_type == "HORIZONTAL"
     ]
 
-    if len(floor_queries) >= 3: # need at least 3?? for a reliable consensus
-        heights  = np.array([p.center_world_xyz[2] for p in floor_queries])
-        ground_z = float(np.median(heights))
-        normal   = np.median(
+    if len(floor_queries) >= 3:  # need at least 3 for a reliable consensus
+        normal = np.median(
             np.array([p.normal for p in floor_queries]), axis=0
         )
         normal = normal / np.linalg.norm(normal)
+        centers    = np.array([p.center_world_xyz for p in floor_queries])
+        center_xyz = np.median(centers, axis=0)
+        d          = -float(np.dot(normal, center_xyz))
 
         return DetectedPlane(
             plane_id         = "ground_consensus",
             normal           = normal,
-            equation         = [0.0, 0.0, 1.0, -ground_z],
+            equation         = [float(normal[0]), float(normal[1]), float(normal[2]), d],
             plane_type       = "HORIZONTAL",
-            source           = "floor_query_consensus",
-            center_world_xyz = np.array([0.0, 0.0, ground_z]),
+            source           = "floor_consensus",
+            center_world_xyz = center_xyz,
         )
 
-    # Step 2: fall back to all horizontal planes 
+    # Step 2: fall back to all horizontal planes
     horizontal = [
         p for p in all_planes
         if p.plane_type == "HORIZONTAL"
@@ -431,6 +521,7 @@ def find_ground_plane(all_planes: list[DetectedPlane]) -> Optional[DetectedPlane
 
     # Find the lowest valid cluster
     valid_labels = [l for l in set(labels) if l != -1]
+    lowest_label = None
 
     if not valid_labels:
         # All detections were noise — just take the single lowest point
@@ -449,8 +540,8 @@ def find_ground_plane(all_planes: list[DetectedPlane]) -> Optional[DetectedPlane
             print(f"Warning: ground plane detected at z={ground_z:.2f}m — "
                   f"expected near 0. Check plane data.")
 
-    # Use the normal from the lowest cluster's planes for accuracy
-    if valid_labels:
+    # Use the normal and centroid from the lowest cluster
+    if lowest_label is not None:
         lowest_planes = [
             horizontal[i] for i, l in enumerate(labels)
             if l == lowest_label
@@ -459,17 +550,22 @@ def find_ground_plane(all_planes: list[DetectedPlane]) -> Optional[DetectedPlane
             np.array([p.normal for p in lowest_planes]), axis=0
         )
         normal = normal / np.linalg.norm(normal)
+        center_xyz = np.median(
+            np.array([p.center_world_xyz for p in lowest_planes]), axis=0
+        )
     else:
         # No clean cluster — use a pure vertical up vector as best guess
-        normal = np.array([0.0, 0.0, 1.0])
+        normal     = np.array([0.0, 0.0, 1.0])
+        center_xyz = np.array([0.0, 0.0, ground_z])
 
+    d = -float(np.dot(normal, center_xyz))
     return DetectedPlane(
         plane_id         = "ground_fallback",
         normal           = normal,
-        equation         = [0.0, 0.0, 1.0, -ground_z],
+        equation         = [float(normal[0]), float(normal[1]), float(normal[2]), d],
         plane_type       = "HORIZONTAL",
         source           = "height_cluster_fallback",
-        center_world_xyz = np.array([0.0, 0.0, ground_z]),
+        center_world_xyz = center_xyz,
     )
 
 
