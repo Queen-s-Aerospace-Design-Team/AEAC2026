@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YOLO Pipeline — SVO → trained model → JSONL handoff</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    max-width: 880px;
+    margin: 2rem auto;
+    padding: 0 1.25rem;
+    line-height: 1.55;
+    color: #1a1a1a;
+  }
+  h1 { border-bottom: 2px solid #333; padding-bottom: 0.4rem; }
+  h2 { margin-top: 2.5rem; border-bottom: 1px solid #ccc; padding-bottom: 0.25rem; }
+  h3 { margin-top: 1.75rem; color: #2c3e50; }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-size: 0.92em; }
+  pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    line-height: 1.45;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  .callout {
+    border-left: 4px solid;
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: #f8f8f8;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout.decide { border-color: #e67e22; background: #fef5ec; }
+  .callout.tip    { border-color: #27ae60; background: #eaf7ef; }
+  .callout.warn   { border-color: #c0392b; background: #fdecea; }
+  .callout strong { display: inline-block; margin-right: 0.4rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ccc; padding: 0.45rem 0.7rem; text-align: left; vertical-align: top; }
+  th { background: #f0f0f0; }
+  .topo-svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1rem 0;
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 0.75rem;
+  }
+  ul, ol { padding-left: 1.5rem; }
+  ul li, ol li { margin: 0.2rem 0; }
+  .tldr {
+    background: #eef5fa;
+    border: 1px solid #b6d3e5;
+    padding: 0.9rem 1.2rem;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>YOLO Pipeline: SVO → trained model → JSONL handoff</h1>
+<p style="color:#666; margin-top:-0.5rem;">How the paper-detector half of the perception stack gets built, trained, and deployed. Written 2026-05-11.</p>
+
+<div class="tldr">
+<strong>TL;DR.</strong> Record SVOs → extract every Nth frame as PNG → upload to Roboflow → label per-color classes → export YOLOv11 dataset → train on a rented cloud GPU (Lambda / Runpod / Vast) → export ONNX → on the Jetson, run a worker that opens each finished SVO segment, runs the model on the left camera frames, writes one JSONL line per detection per frame to <code>&lt;detections_dir&gt;/&lt;segment_id&gt;.jsonl</code>. The SDK does the rest. Resolution normalisation is YOLO's standard letterbox, and the SDK's <code>runtime.detector_image_size</code> handles the bbox rescale.
+</div>
+
+<h2>Where this fits in the topology</h2>
+
+<svg viewBox="0 0 740 600" xmlns="http://www.w3.org/2000/svg" class="topo-svg"
+     role="img" aria-label="Perception pipeline topology diagram">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#444"/>
+    </marker>
+    <style>
+      .node-bg    { fill: #fff; stroke: #555; stroke-width: 1.5; }
+      .node-file  { fill: #fff; stroke: #1e5a9c; stroke-width: 1.5; }
+      .node-out   { fill: #fff; stroke: #2c8a4a; stroke-width: 1.5; }
+      .lbl        { font: 13px -apple-system, "Segoe UI", Helvetica, sans-serif; fill: #1a1a1a; text-anchor: middle; dominant-baseline: middle; }
+      .lbl-mono   { font: 12px "SF Mono", Menlo, Consolas, monospace; fill: #1a1a1a; text-anchor: middle; dominant-baseline: middle; }
+      .lbl-italic { font-style: italic; font-size: 12px; fill: #555; font-family: -apple-system, sans-serif; text-anchor: middle; dominant-baseline: middle; }
+      .edge       { stroke: #555; stroke-width: 1.5; fill: none; }
+      .edge-lbl   { font: italic 11px -apple-system, sans-serif; fill: #555; }
+      .aside      { font: 12px -apple-system, sans-serif; fill: #666; }
+    </style>
+  </defs>
+
+  <!-- ZED camera -->
+  <rect x="300" y="20" width="140" height="40" rx="6" class="node-bg"/>
+  <text x="370" y="40" class="lbl">ZED camera</text>
+
+  <!-- ZED → SVO segments -->
+  <line x1="370" y1="60" x2="370" y2="96" class="edge" marker-end="url(#arrow)"/>
+  <text x="382" y="80" class="edge-lbl">grab</text>
+
+  <!-- SVO segments -->
+  <rect x="230" y="100" width="280" height="40" rx="6" class="node-file"/>
+  <text x="370" y="120" class="lbl-mono">segments/segment-NNNNN.svo2</text>
+  <text x="525" y="124" class="aside">← recorder (live)</text>
+
+  <!-- fork: SVO → YOLO worker + SVO → SDK process_segment -->
+  <line x1="370" y1="140" x2="370" y2="180" class="edge"/>
+  <line x1="140" y1="180" x2="570" y2="180" class="edge"/>
+  <line x1="140" y1="180" x2="140" y2="216" class="edge" marker-end="url(#arrow)"/>
+  <line x1="570" y1="180" x2="570" y2="216" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- YOLO worker -->
+  <rect x="40" y="220" width="200" height="40" rx="6" class="node-bg"/>
+  <text x="140" y="240" class="lbl">YOLO worker</text>
+
+  <!-- SDK process_segment -->
+  <rect x="460" y="220" width="220" height="40" rx="6" class="node-bg"/>
+  <text x="570" y="240" class="lbl">SDK process_segment</text>
+
+  <!-- YOLO worker → detections jsonl -->
+  <line x1="140" y1="260" x2="140" y2="336" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- detections jsonl -->
+  <rect x="40" y="340" width="260" height="60" rx="6" class="node-file"/>
+  <text x="170" y="362" class="lbl-mono">&lt;detections_dir&gt;/</text>
+  <text x="170" y="382" class="lbl-mono">segment-NNNNN.jsonl</text>
+
+  <!-- cross-feed: detections jsonl → SDK process_segment -->
+  <path d="M 300 370 L 380 370 L 380 240 L 456 240" class="edge" marker-end="url(#arrow)"/>
+  <text x="386" y="305" class="edge-lbl">SDK reads</text>
+
+  <!-- SDK process_segment → stream/frames.jsonl -->
+  <line x1="570" y1="260" x2="570" y2="416" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- stream/frames.jsonl -->
+  <rect x="460" y="420" width="220" height="40" rx="6" class="node-out"/>
+  <text x="570" y="440" class="lbl-mono">stream/frames.jsonl</text>
+
+  <!-- stream → circle_processing -->
+  <line x1="570" y1="460" x2="570" y2="506" class="edge" marker-end="url(#arrow)"/>
+
+  <!-- circle_processing (Lucas) -->
+  <rect x="460" y="510" width="220" height="60" rx="6" class="node-bg"/>
+  <text x="570" y="532" class="lbl">circle_processing</text>
+  <text x="570" y="552" class="lbl-italic">(Lucas)</text>
+</svg>
+
+<p>The YOLO worker is an <em>independent</em> process. It does not know about <code>circle_processing</code>; it only knows about SVO files in and JSONL files out. The SDK joins YOLO output to ZED depth/pose/plane data by <code>(segment_id, frame_idx)</code>.</p>
+
+<h2>The contract we have to produce</h2>
+
+<p>Recap from <code>perception/zed-positional-measurement/src/zed_positional_measurement/models.py</code>:</p>
+
+<pre><code>// One line per detection, multiple papers per frame = multiple lines.
+{
+  "frame_idx": 17,                              // local to the segment, 0-based
+  "bbox_xyxy": [x1, y1, x2, y2],                // integer pixels
+  "label": "paper",                             // semantic label
+  "color": "red",                               // paper colour / class
+  "confidence": 0.92                            // 0..1
+}</code></pre>
+
+<p>One file per recorded SVO segment, written to <code>&lt;paper.external_detections_dir&gt;/&lt;segment_id&gt;.jsonl</code>. The SDK reads it back via <code>SegmentJsonlPaperProvider</code> when <code>paper.mode = "external_boxes"</code>.</p>
+
+<h2>End-to-end stages</h2>
+
+<h3>Stage 1 — Capture SVOs (already done)</h3>
+
+<p><code>perception/record_svo.py</code> records HD1200 @ 30 fps to <code>recordings/&lt;name&gt;.svo2</code>. You'll feed those SVOs into stage 2 for training frame extraction, and later into stage 8's inference worker for production runs.</p>
+
+<div class="callout tip"><strong>Tip.</strong> Vary lighting, distance, angle, and background across recordings. The drone will see papers from oblique angles at unpredictable distances — your training set has to too. One 5-minute static recording is a worse dataset than ten 30-second varied ones.</div>
+
+<h3>Stage 2 — Extract training frames (already done)</h3>
+
+<pre><code>python3 extract_training_frames.py --svo recordings/flight_01.svo2 --every_n 15</code></pre>
+
+<p>That gives you ~2 fps of PNGs at HD1200 in <code>training_frames/flight_01/</code>. The script uses <code>sl.VIEW.LEFT</code>, so the images are the left ZED camera, which is also what the inference worker will use in stage 8 — train and infer on the same view.</p>
+
+<table>
+<thead><tr><th>every_n</th><th>Effective fps</th><th>Good for</th></tr></thead>
+<tbody>
+<tr><td>30</td><td>1 fps</td><td>long recordings, you want diversity not duplication</td></tr>
+<tr><td>15 (default)</td><td>2 fps</td><td>standard</td></tr>
+<tr><td>5</td><td>6 fps</td><td>short recordings, dense coverage</td></tr>
+<tr><td>1</td><td>30 fps</td><td>almost never — adjacent frames are near-duplicates and waste label hours</td></tr>
+</tbody>
+</table>
+
+<h3>Stage 3 — Label in Roboflow</h3>
+
+<p><code>upload_to_roboflow.py</code> pushes the PNGs to your Roboflow project. Then you label them in Roboflow Annotate.</p>
+
+<h4>Class strategy</h4>
+
+<p>The SDK's <code>PaperDetection</code> carries both <code>label</code> and <code>color</code>. The clean way to produce both from a single-output YOLO is to <strong>train one class per colour</strong>:</p>
+
+<table>
+<thead><tr><th>Roboflow class name</th><th>SDK class_id</th><th>label</th><th>color</th></tr></thead>
+<tbody>
+<tr><td><code>paper_red</code></td><td>0</td><td>paper</td><td>red</td></tr>
+<tr><td><code>paper_blue</code></td><td>1</td><td>paper</td><td>blue</td></tr>
+<tr><td><code>paper_yellow</code></td><td>2</td><td>paper</td><td>yellow</td></tr>
+<tr><td>…</td><td>…</td><td>…</td><td>…</td></tr>
+</tbody>
+</table>
+
+<p>The worker (stage 8) then maps <code>class_id → (label, color)</code> using <code>paper.classes</code> in the SDK config. This keeps the model output dense (one detection = one class) and avoids ambiguous multi-task heads.</p>
+
+<div class="callout decide"><strong>DECIDE.</strong> How many target colours are in the AEAC 2026 spec? That determines class count. If it's ≤ 8 colours we can stay with per-colour classes; if it ever balloons past ~20, switch to one <code>paper</code> class + a separate colour classifier head, but you don't need that now.</div>
+
+<h4>Labeling tips that matter for this dataset</h4>
+
+<ul>
+  <li>Box the entire visible paper, not just its centre — YOLO learns the box and we use its <em>centre pixel</em> downstream for the depth sample.</li>
+  <li>Occluded papers: box only the visible portion, mark as the colour you can see. The detector should learn to ignore "I can only see 15% of it."</li>
+  <li>Don't label papers that are blown out / motion-blurred to the point you can't tell the colour. Garbage labels poison the model more than missing labels do.</li>
+  <li>Aim for at least 300–500 boxes per colour for a solid baseline; 1000+ per colour for production-grade.</li>
+</ul>
+
+<h3>Stage 4 — Generate the Roboflow dataset version</h3>
+
+<p>In Roboflow → Generate → pick:</p>
+
+<ul>
+  <li><strong>Preprocessing</strong>: Resize to <code>640 × 640</code> (Fit within → letterbox). This is the standard YOLO input size and what we'll set <code>detector_image_size</code> to.</li>
+  <li><strong>Augmentations</strong> (start mild, add more if val accuracy diverges from train):
+    <ul>
+      <li>Horizontal flip</li>
+      <li>Brightness ±15%, Exposure ±10% — drone flights have variable lighting</li>
+      <li>Blur up to 1.5px — simulates motion blur</li>
+      <li>Noise up to ~2% — sensor noise robustness</li>
+      <li><em>Skip</em> vertical flip (papers have an "up") and skip aggressive rotation if you trust your camera orientation</li>
+    </ul>
+  </li>
+  <li><strong>Train/Valid/Test split</strong>: 70/20/10 is fine.</li>
+  <li><strong>Export format</strong>: "YOLOv11" (also works as YOLOv8). You get a zip with <code>data.yaml</code>, <code>train/</code>, <code>valid/</code>, <code>test/</code>.</li>
+</ul>
+
+<h3>Stage 5 — Train on rented cloud GPU</h3>
+
+<h4>Hardware sizing</h4>
+
+<table>
+<thead><tr><th>Dataset size</th><th>GPU</th><th>Approx. train time (50 epochs, YOLOv11s)</th></tr></thead>
+<tbody>
+<tr><td>~1k images</td><td>1× RTX 4090 / A10</td><td>15–30 min</td></tr>
+<tr><td>~5k images</td><td>1× A100 40GB</td><td>30–60 min</td></tr>
+<tr><td>~20k images</td><td>1× A100 80GB or 2× A100 40GB</td><td>2–3 h</td></tr>
+</tbody>
+</table>
+
+<div class="callout decide"><strong>DECIDE — cloud provider.</strong> Cheapest fastest options right now:
+  <ul style="margin-top:0.3rem;">
+    <li><strong>Runpod.io</strong> — spot pricing, ~$0.40/hr for an RTX 4090, great for first experiments</li>
+    <li><strong>Lambda Cloud</strong> — pricier but rock-solid A100s, no spot interruptions</li>
+    <li><strong>Vast.ai</strong> — cheapest but variable quality machines</li>
+    <li><strong>Roboflow Train (hosted)</strong> — if you want to skip the SSH/CLI step entirely, fine for first cut</li>
+  </ul>
+  For a first-cut model on ~1–2k images, Runpod 4090 spot is the sweet spot.
+</div>
+
+<h4>Training script</h4>
+
+<pre><code># on the cloud GPU box
+pip install ultralytics
+
+# pull dataset from Roboflow
+pip install roboflow
+python -c "
+from roboflow import Roboflow
+rf = Roboflow(api_key='YOUR_KEY')
+ds = rf.workspace('YOUR_WS').project('circle-corner-detection').version(1).download('yolov11')
+print(ds.location)  # path to dataset folder containing data.yaml
+"
+
+# train
+yolo task=detect mode=train \
+    model=yolo11s.pt \
+    data=&lt;dataset_path&gt;/data.yaml \
+    imgsz=640 \
+    epochs=50 \
+    batch=16 \
+    patience=15 \
+    project=runs name=papers_v1</code></pre>
+
+<div class="callout decide"><strong>DECIDE — model size.</strong> <code>yolo11n.pt</code> (nano, ~5 ms on Jetson Orin), <code>yolo11s.pt</code> (small, ~10 ms — recommended baseline), <code>yolo11m.pt</code> (medium, ~25 ms — only if accuracy demands it). Start at <code>s</code>. If Jetson can't hit your fps budget at <code>s</code>, drop to <code>n</code>.</div>
+
+<h4>What to look at after training</h4>
+
+<ul>
+  <li><code>runs/papers_v1/results.png</code> — mAP50, mAP50-95, precision, recall curves over epochs. mAP50 ≥ 0.85 is the target for a clean dataset.</li>
+  <li><code>runs/papers_v1/confusion_matrix.png</code> — if blue is getting predicted as purple a lot, that's a labeling/lighting problem, not a model problem.</li>
+  <li><code>runs/papers_v1/val_batch*.jpg</code> — eyeball the predictions on validation images. Look for class confusions and missed detections at small sizes.</li>
+  <li>The best checkpoint is at <code>runs/papers_v1/weights/best.pt</code>.</li>
+</ul>
+
+<h3>Stage 6 — Resolution normalisation (the part you asked about explicitly)</h3>
+
+<p>This is where most people get the bbox coords wrong. Three reference frames:</p>
+
+<table>
+<thead><tr><th>Frame</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td><strong>Native</strong></td><td>The ZED's actual capture, e.g. HD1200 = <code>1920 × 1200</code>. The SVO segments are recorded at this resolution.</td></tr>
+<tr><td><strong>Detector input</strong></td><td>The size your YOLO model expects. Standard is <code>640 × 640</code>.</td></tr>
+<tr><td><strong>Detector output</strong></td><td>YOLO returns boxes in detector-input coordinates (0..640).</td></tr>
+</tbody>
+</table>
+
+<h4>How the math works</h4>
+
+<p>ZED images are <code>1920 × 1200</code>, which is <strong>not</strong> square. To feed YOLO a 640×640 input, the standard approach is <strong>letterbox</strong>:</p>
+
+<ol>
+  <li>Scale the longer side (1920) down to 640: scale factor = <code>640 / 1920 = 0.333</code>.</li>
+  <li>Apply the same scale to the shorter side: <code>1200 × 0.333 = 400</code>.</li>
+  <li>Pad top + bottom with grey to reach 640 height: <code>(640 − 400) / 2 = 120</code> px of padding on each side.</li>
+  <li>Run YOLO on the resulting 640×640 image.</li>
+  <li>For each output box <code>(x1, y1, x2, y2)</code> in YOLO coords, reverse the transform:
+    <ul style="margin-top:0.25rem;">
+      <li>Subtract the pad: <code>y1 -= 120</code>, <code>y2 -= 120</code></li>
+      <li>Divide by scale: divide all four values by <code>0.333</code> to get back to native pixels</li>
+    </ul>
+  </li>
+</ol>
+
+<p>Ultralytics does all of this for you when you use its inference API — boxes come back in <strong>native input image coordinates</strong> automatically. The stage 8 worker uses that, so we don't write the letterbox math by hand.</p>
+
+<h4>Where the SDK does its own scaling</h4>
+
+<p>Even though Ultralytics returns native-coord boxes, you can <em>optionally</em> tell the SDK what resolution your YOLO ran at via <code>runtime.detector_image_size</code>. If you set it equal to the native image size (e.g. <code>[1920, 1200]</code>), no rescaling happens. If you set it to the YOLO input size (e.g. <code>[640, 640]</code>), the SDK rescales the boxes from 640-space to native-space using <code>geometry.scale_bbox_xyxy</code>.</p>
+
+<div class="callout warn"><strong>Watch out.</strong> Decide one approach and stick to it. Recommended: <em>write JSONL in native pixel coords</em> (Ultralytics gives you these for free) and set <code>runtime.detector_image_size</code> to <code>None</code> (the default). Then there is no extra scaling in the SDK and no chance of double-scaling boxes.</div>
+
+<h3>Stage 7 — Export the trained model</h3>
+
+<p>Export to ONNX so any inference runtime can load it. The flag <code>dynamic=False</code> bakes in the 640×640 input shape, which TensorRT prefers on Jetson.</p>
+
+<pre><code>yolo export model=runs/papers_v1/weights/best.pt format=onnx imgsz=640 dynamic=False simplify=True</code></pre>
+
+<p>You get <code>best.onnx</code>. Copy it to the Jetson (e.g. <code>perception/models/papers_v1.onnx</code>).</p>
+
+<div class="callout tip"><strong>TensorRT (optional, for max Jetson speed).</strong> Ultralytics can convert ONNX to a TensorRT engine on the Jetson itself:
+<pre style="margin-top:0.5rem;"><code>yolo export model=papers_v1.onnx format=engine device=0 imgsz=640</code></pre>
+The first inference on the Jetson will take a minute (TRT engine build); subsequent runs are 2–3× faster than raw ONNX. You can also just keep the <code>.pt</code> file on the Jetson and let Ultralytics auto-convert at first inference — same end state.</div>
+
+<h3>Stage 8 — Build the YOLO worker (Jetson)</h3>
+
+<p>This is the new script. It opens each finished SVO segment, runs YOLO on every left-camera frame, and writes JSONL per the contract.</p>
+
+<pre><code>#!/usr/bin/env python3
+"""
+yolo_worker.py — Run on Jetson. Watches segments/ for new SVO files and emits
+one JSONL per segment matching the contract in
+zed_positional_measurement/models.py:PaperDetection.from_dict.
+
+Usage:
+    python3 yolo_worker.py \\
+        --segments-dir runs/&lt;session_id&gt;/segments \\
+        --out-dir      runs/&lt;session_id&gt;/yolo \\
+        --model        perception/models/papers_v1.pt
+"""
+
+import argparse, json, time
+from pathlib import Path
+import pyzed.sl as sl
+from ultralytics import YOLO
+
+# class_id (Roboflow class index) → (label, color) for the SDK
+CLASS_MAP = {
+    0: ("paper", "red"),
+    1: ("paper", "blue"),
+    2: ("paper", "yellow"),
+    # extend with the rest of your AEAC colours
+}
+
+def process_segment(svo_path: Path, out_path: Path, model: YOLO,
+                    conf: float = 0.25) -> int:
+    """Process one SVO segment → one JSONL file. Returns frames processed."""
+    zed = sl.Camera()
+    params = sl.InitParameters()
+    params.set_from_svo_file(str(svo_path))
+    params.svo_real_time_mode = False
+    if zed.open(params) != sl.ERROR_CODE.SUCCESS:
+        raise RuntimeError(f"failed to open {svo_path}")
+
+    image = sl.Mat()
+    local_frame_idx = 0
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w") as handle:
+        while zed.grab() == sl.ERROR_CODE.SUCCESS:
+            zed.retrieve_image(image, sl.VIEW.LEFT)
+            img_bgr = image.get_data()[:, :, :3]  # BGRA → BGR
+
+            # Ultralytics returns boxes in native image coords. We pass
+            # imgsz=640 so internally it letterboxes to 640 then reverses.
+            results = model(img_bgr, imgsz=640, conf=conf, verbose=False)
+
+            for box in results[0].boxes:
+                cls_id = int(box.cls[0])
+                if cls_id not in CLASS_MAP:
+                    continue
+                label, color = CLASS_MAP[cls_id]
+                x1, y1, x2, y2 = (int(round(v)) for v in box.xyxy[0].tolist())
+                handle.write(json.dumps({
+                    "frame_idx": local_frame_idx,
+                    "bbox_xyxy": [x1, y1, x2, y2],
+                    "label": label,
+                    "color": color,
+                    "confidence": float(box.conf[0]),
+                }) + "\n")
+            local_frame_idx += 1
+
+    zed.close()
+    return local_frame_idx
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--segments-dir", required=True, type=Path)
+    ap.add_argument("--out-dir",      required=True, type=Path)
+    ap.add_argument("--model",        required=True, type=Path)
+    ap.add_argument("--conf", type=float, default=0.25)
+    ap.add_argument("--poll-seconds", type=float, default=2.0,
+                    help="how often to scan for new finished segments")
+    args = ap.parse_args()
+
+    model = YOLO(str(args.model))
+    seen: set[str] = set()
+
+    while True:
+        for svo in sorted(args.segments_dir.glob("segment-*.svo2")):
+            seg_id = svo.stem  # "segment-00001"
+            out_path = args.out_dir / f"{seg_id}.jsonl"
+            if seg_id in seen or out_path.exists():
+                seen.add(seg_id)
+                continue
+            # Recorder writes segments sequentially. A segment-NNNNN is
+            # "finished" once segment-N+1 exists.
+            next_id = f"segment-{int(seg_id.split('-')[1]) + 1:05d}.svo2"
+            if not (args.segments_dir / next_id).exists():
+                continue
+            print(f"[yolo_worker] processing {seg_id}")
+            n = process_segment(svo, out_path, model, conf=args.conf)
+            print(f"[yolo_worker]   wrote {n} frames → {out_path}")
+            seen.add(seg_id)
+
+        time.sleep(args.poll_seconds)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+
+<div class="callout tip"><strong>"Segment is finished" detection.</strong> The recorder rolls segments every <code>segment_duration_s</code> (currently 20s). The simplest signal that segment N is closed is that segment N+1 exists. This is what the snippet above uses. If we ever want zero-lag-after-last-segment behaviour, we'll add a sentinel file on session stop.</div>
+
+<h3>Stage 9 — Wire it into the SDK config</h3>
+
+<p>On the Jetson, the SDK's config now points at the YOLO output directory:</p>
+
+<pre><code>{
+  "recording": {
+    "enable_svo_recording": true,
+    "resolution": "HD1200",
+    "fps": 30,
+    "depth_mode": "NEURAL",
+    "segment_duration_s": 20
+  },
+  "tracking": {
+    "mode": "vslam_map",
+    "positional_tracking_mode": "GEN_3"
+  },
+  "paper": {
+    "mode": "external_boxes",
+    "external_detections_dir": "runs/&lt;session_id&gt;/yolo",
+    "confidence_threshold": 25,
+    "classes": {
+      "0": {"label": "paper", "color": "red"},
+      "1": {"label": "paper", "color": "blue"},
+      "2": {"label": "paper", "color": "yellow"}
+    }
+  },
+  "plane_detection": {
+    "include_floor_plane": true
+  },
+  "runtime": {
+    "root_dir": "runs",
+    "session_id": "smoke-test-01",
+    "detector_image_size": null
+  }
+}</code></pre>
+
+<p>Then on the Jetson, two processes side by side:</p>
+
+<pre><code># terminal 1 — recorder + main SDK
+python -m zed_positional_measurement run --config config.json
+
+# terminal 2 — YOLO worker
+python3 yolo_worker.py \
+    --segments-dir runs/smoke-test-01/segments \
+    --out-dir      runs/smoke-test-01/yolo \
+    --model        perception/models/papers_v1.pt</code></pre>
+
+<p>The SDK's per-segment background worker (already wired in <code>pipeline.record_session</code>) will pull each segment as the YOLO worker finishes the corresponding JSONL, and the frame stream at <code>runs/smoke-test-01/stream/frames.jsonl</code> grows during flight.</p>
+
+<h2>Decisions you still need to make</h2>
+
+<ol>
+  <li><strong>Class count.</strong> How many target colours does AEAC 2026 require? — drives Roboflow class setup.</li>
+  <li><strong>YOLO model size.</strong> Start with <code>yolo11s</code>. Drop to <code>n</code> if Jetson is fps-bound.</li>
+  <li><strong>Cloud provider.</strong> Runpod 4090 spot for first cut. Lambda A100 if reliability matters more than $.</li>
+  <li><strong>SVO ↔ training frame budget.</strong> Aim for 300–500 labeled boxes per colour minimum, 1000+ for production. <code>every_n=15</code> from a 5-minute flight gives ~600 frames — at ~3 papers per frame that's enough labels for one colour, so plan recordings accordingly.</li>
+  <li><strong>Run YOLO on the SVO or live?</strong> Above is the simpler design — let the recorder write SVO segments and have the YOLO worker tail the segments directory. If we ever want to skip the SVO disk hop and tee the live camera frames into both the recorder and YOLO, that's a bigger refactor and not needed for the smoke test.</li>
+</ol>
+
+<h2>Things to watch on the first hardware run</h2>
+
+<ul>
+  <li>Per-segment YOLO worker wall-time. If a 20s segment takes &gt; 20s to process, YOLO becomes the bottleneck and frame stream falls behind real time.</li>
+  <li>Class confusion in <code>circle_processing.cluster_papers</code> output. If yellow papers are getting clustered as red, the labeling was inconsistent and the cluster colour vote will fail loudly.</li>
+  <li>Detection rate at far range. ZED at HD1200 sees ~5m papers clearly; YOLO will get lossy past that. Compare detection density vs. estimated distance in <code>frames.jsonl</code> for the first flight to calibrate expectations.</li>
+  <li>Frame-index alignment. The first ZED <code>grab()</code> on an SVO is <code>local_frame_idx = 0</code>. The SDK's <code>process_segment</code> uses the same 0-based convention. Sanity-check by opening the first JSONL and confirming detections at <code>frame_idx=0</code> exist for the first paper-containing frame in the SVO.</li>
+</ul>
+
+<h2>Files this doc covers</h2>
+
+<table>
+<thead><tr><th>File</th><th>Status</th><th>Stage</th></tr></thead>
+<tbody>
+<tr><td><code>perception/record_svo.py</code></td><td>exists</td><td>1</td></tr>
+<tr><td><code>perception/extract_training_frames.py</code></td><td>exists</td><td>2</td></tr>
+<tr><td><code>perception/upload_to_roboflow.py</code></td><td>exists</td><td>3</td></tr>
+<tr><td><code>perception/yolo_worker.py</code></td><td><strong>to write</strong> (snippet above)</td><td>8</td></tr>
+<tr><td><code>perception/models/papers_v1.pt</code> (or <code>.onnx</code>)</td><td><strong>artifact from training</strong></td><td>5, 7</td></tr>
+<tr><td><code>config.json</code> for the SDK</td><td><strong>to write</strong> (snippet above)</td><td>9</td></tr>
+</tbody>
+</table>
+
+</body>
+</html>
