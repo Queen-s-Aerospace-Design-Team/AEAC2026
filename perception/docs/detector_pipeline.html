@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>YOLO Pipeline — SVO → trained model → JSONL handoff</title>
+<title>Detector Pipeline — SVO → RF-DETR → JSONL handoff</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -64,11 +64,11 @@
 </head>
 <body>
 
-<h1>YOLO Pipeline: SVO → trained model → JSONL handoff</h1>
-<p style="color:#666; margin-top:-0.5rem;">How the paper-detector half of the perception stack gets built, trained, and deployed. Written 2026-05-11.</p>
+<h1>Detector Pipeline: SVO → RF-DETR → JSONL handoff</h1>
+<p style="color:#666; margin-top:-0.5rem;">How the paper-detector half of the perception stack gets built, trained, and deployed. Written 2026-05-11, updated 2026-05-12 to use RF-DETR via Roboflow Inference instead of Ultralytics YOLO.</p>
 
 <div class="tldr">
-<strong>TL;DR.</strong> Record SVOs → extract every Nth frame as PNG → upload to Roboflow → label per-color classes → export YOLOv11 dataset → train on a rented cloud GPU (Lambda / Runpod / Vast) → export ONNX → on the Jetson, run a worker that opens each finished SVO segment, runs the model on the left camera frames, writes one JSONL line per detection per frame to <code>&lt;detections_dir&gt;/&lt;segment_id&gt;.jsonl</code>. The SDK does the rest. Resolution normalisation is YOLO's standard letterbox, and the SDK's <code>runtime.detector_image_size</code> handles the bbox rescale.
+<strong>TL;DR.</strong> Record SVOs → extract every Nth frame as PNG → upload to Roboflow → label per-colour classes → train an <strong>RF-DETR Small</strong> model in Roboflow's hosted training UI (no GPU rental needed) → on the Jetson, run the Roboflow Inference Docker container locally → run a worker that opens each finished SVO segment, calls Inference on the left camera frames, writes one JSONL line per detection per frame to <code>&lt;detections_dir&gt;/&lt;segment_id&gt;.jsonl</code>. The SDK does the rest. Resolution normalisation (letterbox to 640) happens inside Roboflow Inference; the worker sees boxes in native ZED pixel coords and converts Roboflow's (cx, cy, w, h) format to xyxy before writing.
 </div>
 
 <h2>Where this fits in the topology</h2>
@@ -106,21 +106,21 @@
   <text x="370" y="120" class="lbl-mono">segments/segment-NNNNN.svo2</text>
   <text x="525" y="124" class="aside">← recorder (live)</text>
 
-  <!-- fork: SVO → YOLO worker + SVO → SDK process_segment -->
+  <!-- fork: SVO → detector worker + SVO → SDK process_segment -->
   <line x1="370" y1="140" x2="370" y2="180" class="edge"/>
   <line x1="140" y1="180" x2="570" y2="180" class="edge"/>
   <line x1="140" y1="180" x2="140" y2="216" class="edge" marker-end="url(#arrow)"/>
   <line x1="570" y1="180" x2="570" y2="216" class="edge" marker-end="url(#arrow)"/>
 
-  <!-- YOLO worker -->
+  <!-- Detector worker (RF-DETR via Roboflow Inference) -->
   <rect x="40" y="220" width="200" height="40" rx="6" class="node-bg"/>
-  <text x="140" y="240" class="lbl">YOLO worker</text>
+  <text x="140" y="240" class="lbl">Detector worker</text>
 
   <!-- SDK process_segment -->
   <rect x="460" y="220" width="220" height="40" rx="6" class="node-bg"/>
   <text x="570" y="240" class="lbl">SDK process_segment</text>
 
-  <!-- YOLO worker → detections jsonl -->
+  <!-- detector worker → detections jsonl -->
   <line x1="140" y1="260" x2="140" y2="336" class="edge" marker-end="url(#arrow)"/>
 
   <!-- detections jsonl -->
@@ -148,7 +148,7 @@
   <text x="570" y="552" class="lbl-italic">(Lucas)</text>
 </svg>
 
-<p>The YOLO worker is an <em>independent</em> process. It does not know about <code>circle_processing</code>; it only knows about SVO files in and JSONL files out. The SDK joins YOLO output to ZED depth/pose/plane data by <code>(segment_id, frame_idx)</code>.</p>
+<p>The detector worker is an <em>independent</em> process. It does not know about <code>circle_processing</code>; it only knows about SVO files in and JSONL files out. The SDK joins detector output to ZED depth/pose/plane data by <code>(segment_id, frame_idx)</code>.</p>
 
 <h2>The contract we have to produce</h2>
 
@@ -195,7 +195,7 @@
 
 <h4>Class strategy</h4>
 
-<p>The SDK's <code>PaperDetection</code> carries both <code>label</code> and <code>color</code>. The clean way to produce both from a single-output YOLO is to <strong>train one class per colour</strong>:</p>
+<p>The SDK's <code>PaperDetection</code> carries both <code>label</code> and <code>color</code>. The clean way to produce both from a single-output detector is to <strong>train one class per colour</strong>:</p>
 
 <table>
 <thead><tr><th>Roboflow class name</th><th>SDK class_id</th><th>label</th><th>color</th></tr></thead>
@@ -214,10 +214,10 @@
 <h4>Labeling tips that matter for this dataset</h4>
 
 <ul>
-  <li>Box the entire visible paper, not just its centre — YOLO learns the box and we use its <em>centre pixel</em> downstream for the depth sample.</li>
+  <li>Box the entire visible paper, not just its centre — the detector learns the box and we use its <em>centre pixel</em> downstream for the depth sample.</li>
   <li>Occluded papers: box only the visible portion, mark as the colour you can see. The detector should learn to ignore "I can only see 15% of it."</li>
   <li>Don't label papers that are blown out / motion-blurred to the point you can't tell the colour. Garbage labels poison the model more than missing labels do.</li>
-  <li>Aim for at least 300–500 boxes per colour for a solid baseline; 1000+ per colour for production-grade.</li>
+  <li>Aim for at least 300–500 boxes per colour for a solid baseline; 1000+ per colour for production-grade. RF-DETR is more sample-efficient than YOLO, so the lower end of this range is realistic for a first cut.</li>
 </ul>
 
 <h3>Stage 4 — Generate the Roboflow dataset version</h3>
@@ -225,7 +225,7 @@
 <p>In Roboflow → Generate → pick:</p>
 
 <ul>
-  <li><strong>Preprocessing</strong>: Resize to <code>640 × 640</code> (Fit within → letterbox). This is the standard YOLO input size and what we'll set <code>detector_image_size</code> to.</li>
+  <li><strong>Preprocessing</strong>: Resize to <code>640 × 640</code> (Fit within → letterbox). RF-DETR Small uses 640×640 input — same as YOLO, so the letterbox preprocess is identical and the SDK's <code>runtime.detector_image_size</code> story is unchanged.</li>
   <li><strong>Augmentations</strong> (start mild, add more if val accuracy diverges from train):
     <ul>
       <li>Horizontal flip</li>
@@ -236,66 +236,35 @@
     </ul>
   </li>
   <li><strong>Train/Valid/Test split</strong>: 70/20/10 is fine.</li>
-  <li><strong>Export format</strong>: "YOLOv11" (also works as YOLOv8). You get a zip with <code>data.yaml</code>, <code>train/</code>, <code>valid/</code>, <code>test/</code>.</li>
+  <li><strong>Export</strong>: not needed for the hosted RF-DETR training path. Just hit "Generate" — the trained model lives inside Roboflow and is served via the Inference SDK at stage 7. (You can still export a YOLO-format zip from the same generated version if you ever want to retrain locally; it doesn't break anything.)</li>
 </ul>
 
-<h3>Stage 5 — Train on rented cloud GPU</h3>
+<h3>Stage 5 — Train in Roboflow's hosted UI</h3>
 
-<h4>Hardware sizing</h4>
+<p>From the generated dataset version, click <strong>Train</strong>. Pick:</p>
 
-<table>
-<thead><tr><th>Dataset size</th><th>GPU</th><th>Approx. train time (50 epochs, YOLOv11s)</th></tr></thead>
-<tbody>
-<tr><td>~1k images</td><td>1× RTX 4090 / A10</td><td>15–30 min</td></tr>
-<tr><td>~5k images</td><td>1× A100 40GB</td><td>30–60 min</td></tr>
-<tr><td>~20k images</td><td>1× A100 80GB or 2× A100 40GB</td><td>2–3 h</td></tr>
-</tbody>
-</table>
+<ul>
+  <li><strong>Architecture</strong>: <strong>Roboflow RF-DETR</strong> (the "Recommended" option).</li>
+  <li><strong>Model Size</strong>: <strong>Small</strong>. If "Show More" exposes Medium and your training credits allow it, Medium will be slightly more accurate but ~2× the latency on Jetson — still inside our 20s-per-segment budget. Start with Small; if precision/recall isn't where you want it, retrain as Medium on the same version.</li>
+  <li><strong>Train from checkpoint</strong>: leave default (Roboflow uses its base RF-DETR pretrained weights).</li>
+</ul>
 
-<div class="callout decide"><strong>DECIDE — cloud provider.</strong> Cheapest fastest options right now:
-  <ul style="margin-top:0.3rem;">
-    <li><strong>Runpod.io</strong> — spot pricing, ~$0.40/hr for an RTX 4090, great for first experiments</li>
-    <li><strong>Lambda Cloud</strong> — pricier but rock-solid A100s, no spot interruptions</li>
-    <li><strong>Vast.ai</strong> — cheapest but variable quality machines</li>
-    <li><strong>Roboflow Train (hosted)</strong> — if you want to skip the SSH/CLI step entirely, fine for first cut</li>
-  </ul>
-  For a first-cut model on ~1–2k images, Runpod 4090 spot is the sweet spot.
-</div>
+<p>Roboflow handles compute, hyperparameters, augmentation, and the checkpoint selection. No GPU rental, no SSH, no <code>yolo</code> CLI. The trade is you spend training credits instead of cloud-GPU-hours; for a one-shot competition this comes out roughly the same and saves you the setup.</p>
 
-<h4>Training script</h4>
-
-<pre><code># on the cloud GPU box
-pip install ultralytics
-
-# pull dataset from Roboflow
-pip install roboflow
-python -c "
-from roboflow import Roboflow
-rf = Roboflow(api_key='YOUR_KEY')
-ds = rf.workspace('YOUR_WS').project('circle-corner-detection').version(1).download('yolov11')
-print(ds.location)  # path to dataset folder containing data.yaml
-"
-
-# train
-yolo task=detect mode=train \
-    model=yolo11s.pt \
-    data=&lt;dataset_path&gt;/data.yaml \
-    imgsz=640 \
-    epochs=50 \
-    batch=16 \
-    patience=15 \
-    project=runs name=papers_v1</code></pre>
-
-<div class="callout decide"><strong>DECIDE — model size.</strong> <code>yolo11n.pt</code> (nano, ~5 ms on Jetson Orin), <code>yolo11s.pt</code> (small, ~10 ms — recommended baseline), <code>yolo11m.pt</code> (medium, ~25 ms — only if accuracy demands it). Start at <code>s</code>. If Jetson can't hit your fps budget at <code>s</code>, drop to <code>n</code>.</div>
+<div class="callout tip"><strong>Tip.</strong> Roboflow trains in the cloud and notifies when finished. Don't sit and watch — go label more frames, or work on something else. RF-DETR converges relatively quickly; expect the email back within 30–90 min for a ~1k-image dataset.</div>
 
 <h4>What to look at after training</h4>
 
+<p>Roboflow's training results page shows:</p>
+
 <ul>
-  <li><code>runs/papers_v1/results.png</code> — mAP50, mAP50-95, precision, recall curves over epochs. mAP50 ≥ 0.85 is the target for a clean dataset.</li>
-  <li><code>runs/papers_v1/confusion_matrix.png</code> — if blue is getting predicted as purple a lot, that's a labeling/lighting problem, not a model problem.</li>
-  <li><code>runs/papers_v1/val_batch*.jpg</code> — eyeball the predictions on validation images. Look for class confusions and missed detections at small sizes.</li>
-  <li>The best checkpoint is at <code>runs/papers_v1/weights/best.pt</code>.</li>
+  <li><strong>mAP@50</strong> and <strong>mAP@50:95</strong> — target ≥ 0.85 on mAP@50 for a clean dataset. RF-DETR Small typically hits 0.90+ on small custom datasets with good labels.</li>
+  <li><strong>Per-class precision / recall</strong> — if one colour (e.g. blue) is dragging the mean down, that's a labeling-quality or lighting-coverage problem in your dataset, not a model problem. Fix the dataset, regenerate the version, retrain.</li>
+  <li><strong>Confusion matrix</strong> — confirms colours aren't being mistaken for each other.</li>
+  <li><strong>"Try it"</strong> tab — drag a held-out test image in and visually inspect predictions before committing the model id to the worker.</li>
 </ul>
+
+<p>Once you're happy, the model is identified by <code>&lt;workspace&gt;/&lt;project&gt;/&lt;version&gt;</code> — that's what the worker references at stage 8.</p>
 
 <h3>Stage 6 — Resolution normalisation (the part you asked about explicitly)</h3>
 
@@ -305,71 +274,104 @@ yolo task=detect mode=train \
 <thead><tr><th>Frame</th><th>What it is</th></tr></thead>
 <tbody>
 <tr><td><strong>Native</strong></td><td>The ZED's actual capture, e.g. HD1200 = <code>1920 × 1200</code>. The SVO segments are recorded at this resolution.</td></tr>
-<tr><td><strong>Detector input</strong></td><td>The size your YOLO model expects. Standard is <code>640 × 640</code>.</td></tr>
-<tr><td><strong>Detector output</strong></td><td>YOLO returns boxes in detector-input coordinates (0..640).</td></tr>
+<tr><td><strong>Detector input</strong></td><td>The size RF-DETR Small expects: <code>640 × 640</code>.</td></tr>
+<tr><td><strong>Detector output</strong></td><td>Roboflow Inference returns boxes in <strong>native input image coordinates</strong> — it reverses the letterbox before handing predictions back.</td></tr>
 </tbody>
 </table>
 
 <h4>How the math works</h4>
 
-<p>ZED images are <code>1920 × 1200</code>, which is <strong>not</strong> square. To feed YOLO a 640×640 input, the standard approach is <strong>letterbox</strong>:</p>
+<p>ZED images are <code>1920 × 1200</code>, which is <strong>not</strong> square. To feed the detector a 640×640 input, the standard approach is <strong>letterbox</strong>:</p>
 
 <ol>
   <li>Scale the longer side (1920) down to 640: scale factor = <code>640 / 1920 = 0.333</code>.</li>
   <li>Apply the same scale to the shorter side: <code>1200 × 0.333 = 400</code>.</li>
   <li>Pad top + bottom with grey to reach 640 height: <code>(640 − 400) / 2 = 120</code> px of padding on each side.</li>
-  <li>Run YOLO on the resulting 640×640 image.</li>
-  <li>For each output box <code>(x1, y1, x2, y2)</code> in YOLO coords, reverse the transform:
-    <ul style="margin-top:0.25rem;">
-      <li>Subtract the pad: <code>y1 -= 120</code>, <code>y2 -= 120</code></li>
-      <li>Divide by scale: divide all four values by <code>0.333</code> to get back to native pixels</li>
-    </ul>
-  </li>
+  <li>Run the detector on the resulting 640×640 image.</li>
+  <li>For each output box, reverse the transform: subtract the pad, divide by scale, get back to native pixels.</li>
 </ol>
 
-<p>Ultralytics does all of this for you when you use its inference API — boxes come back in <strong>native input image coordinates</strong> automatically. The stage 8 worker uses that, so we don't write the letterbox math by hand.</p>
+<p>Roboflow Inference handles every step of this transparently. You hand it a full-resolution image (any aspect ratio), it letterboxes internally, runs RF-DETR at 640×640, then reverses the transform — predictions come back in <strong>your input image's native pixel coordinates</strong>. The stage 8 worker doesn't write any letterbox math by hand.</p>
 
-<h4>Where the SDK does its own scaling</h4>
+<h4>Box-format conversion the worker DOES need to do</h4>
 
-<p>Even though Ultralytics returns native-coord boxes, you can <em>optionally</em> tell the SDK what resolution your YOLO ran at via <code>runtime.detector_image_size</code>. If you set it equal to the native image size (e.g. <code>[1920, 1200]</code>), no rescaling happens. If you set it to the YOLO input size (e.g. <code>[640, 640]</code>), the SDK rescales the boxes from 640-space to native-space using <code>geometry.scale_bbox_xyxy</code>.</p>
+<p>Roboflow's prediction objects expose <code>(x, y, width, height)</code> where <code>(x, y)</code> is the box <em>centre</em> — not <code>xyxy</code>. The SDK's <code>PaperDetection</code> schema expects <code>bbox_xyxy = [x1, y1, x2, y2]</code>. So the worker converts:</p>
 
-<div class="callout warn"><strong>Watch out.</strong> Decide one approach and stick to it. Recommended: <em>write JSONL in native pixel coords</em> (Ultralytics gives you these for free) and set <code>runtime.detector_image_size</code> to <code>None</code> (the default). Then there is no extra scaling in the SDK and no chance of double-scaling boxes.</div>
+<pre><code>x1 = round(pred.x - pred.width  / 2)
+y1 = round(pred.y - pred.height / 2)
+x2 = round(pred.x + pred.width  / 2)
+y2 = round(pred.y + pred.height / 2)</code></pre>
 
-<h3>Stage 7 — Export the trained model</h3>
+<p>That's the only coordinate math anywhere in the worker.</p>
 
-<p>Export to ONNX so any inference runtime can load it. The flag <code>dynamic=False</code> bakes in the 640×640 input shape, which TensorRT prefers on Jetson.</p>
+<h4>Where the SDK's <code>runtime.detector_image_size</code> fits in</h4>
 
-<pre><code>yolo export model=runs/papers_v1/weights/best.pt format=onnx imgsz=640 dynamic=False simplify=True</code></pre>
+<p>The SDK can <em>optionally</em> rescale incoming boxes from a detector-space resolution to the native ZED image size. Since Roboflow Inference already returns native-coord boxes, we leave <code>runtime.detector_image_size = null</code> (the default) and the SDK passes boxes through unchanged.</p>
 
-<p>You get <code>best.onnx</code>. Copy it to the Jetson (e.g. <code>perception/models/papers_v1.onnx</code>).</p>
+<div class="callout warn"><strong>Watch out.</strong> Don't double-scale. Roboflow already reverses the letterbox; if you also set <code>detector_image_size = [640, 640]</code> the SDK will rescale 640-space boxes that are already in 1920×1200 space and your detections will land in the wrong pixels (and the wrong depth samples). Leave <code>detector_image_size = null</code>.</div>
 
-<div class="callout tip"><strong>TensorRT (optional, for max Jetson speed).</strong> Ultralytics can convert ONNX to a TensorRT engine on the Jetson itself:
-<pre style="margin-top:0.5rem;"><code>yolo export model=papers_v1.onnx format=engine device=0 imgsz=640</code></pre>
-The first inference on the Jetson will take a minute (TRT engine build); subsequent runs are 2–3× faster than raw ONNX. You can also just keep the <code>.pt</code> file on the Jetson and let Ultralytics auto-convert at first inference — same end state.</div>
+<h3>Stage 7 — Deploy to the Jetson via Roboflow Inference</h3>
 
-<h3>Stage 8 — Build the YOLO worker (Jetson)</h3>
+<p>RF-DETR is served through Roboflow Inference, an inference server image that runs locally on the Jetson. No ONNX export, no manual TensorRT conversion — the container does both the first time the model is invoked.</p>
 
-<p>This is the new script. It opens each finished SVO segment, runs YOLO on every left-camera frame, and writes JSONL per the contract.</p>
+<h4>One-time Jetson setup</h4>
+
+<pre><code># on the Jetson, with internet access
+pip install inference
+# the first model call below also pulls the TRT-Jetson runtime container
+# if you'd rather pre-stage it:
+docker pull roboflow/roboflow-inference-server-trt-jetson</code></pre>
+
+<h4>Warm-up: do this once before competition day</h4>
+
+<p>The first call to <code>model.infer()</code> on a Jetson does three things, in order, that you do NOT want happening on the flight line:</p>
+
+<ol>
+  <li>Pulls the Roboflow Inference container (~3–5 GB) if it isn't already cached.</li>
+  <li>Downloads the trained RF-DETR weights for your <code>workspace/project/version</code> from Roboflow.</li>
+  <li>Compiles the TensorRT engine on the Jetson (~1–2 min on Orin AGX). Cached to disk after.</li>
+</ol>
+
+<p>Do one warm-up inference on a single PNG (or one frame of an SVO) while the Jetson has internet. After that the model runs fully offline.</p>
+
+<pre><code># warm-up, with internet
+python3 -c "
+import cv2, os
+from inference import get_model
+model = get_model(model_id='YOUR_WS/circle-corner-detection/3',
+                  api_key=os.environ['ROBOFLOW_API_KEY'])
+img = cv2.imread('training_frames/flight_01/frame_00000.png')
+print(model.infer(img)[0].predictions[:3])
+"</code></pre>
+
+<div class="callout tip"><strong>Tip.</strong> Save the API key in <code>~/.bashrc</code> as <code>export ROBOFLOW_API_KEY=...</code> on the Jetson, then it's available to every process without re-typing.</div>
+
+<h3>Stage 8 — Build the detector worker (Jetson)</h3>
+
+<p>This is the new script. It opens each finished SVO segment, runs RF-DETR via Roboflow Inference on every left-camera frame, and writes JSONL per the contract.</p>
 
 <pre><code>#!/usr/bin/env python3
 """
-yolo_worker.py — Run on Jetson. Watches segments/ for new SVO files and emits
-one JSONL per segment matching the contract in
+detector_worker.py — Run on Jetson. Watches segments/ for new SVO files and
+emits one JSONL per segment matching the contract in
 zed_positional_measurement/models.py:PaperDetection.from_dict.
 
+Uses RF-DETR via the Roboflow Inference SDK. The Inference container handles
+letterbox + TensorRT compilation transparently; we just hand it BGR frames.
+
 Usage:
-    python3 yolo_worker.py \\
+    python3 detector_worker.py \\
         --segments-dir runs/&lt;session_id&gt;/segments \\
-        --out-dir      runs/&lt;session_id&gt;/yolo \\
-        --model        perception/models/papers_v1.pt
+        --out-dir      runs/&lt;session_id&gt;/detections \\
+        --model-id     YOUR_WS/circle-corner-detection/3
 """
 
-import argparse, json, time
+import argparse, json, os, time
 from pathlib import Path
 import pyzed.sl as sl
-from ultralytics import YOLO
+from inference import get_model
 
-# class_id (Roboflow class index) → (label, color) for the SDK
+# class_id (Roboflow class index) → (label, color) for the SDK contract
 CLASS_MAP = {
     0: ("paper", "red"),
     1: ("paper", "blue"),
@@ -377,7 +379,16 @@ CLASS_MAP = {
     # extend with the rest of your AEAC colours
 }
 
-def process_segment(svo_path: Path, out_path: Path, model: YOLO,
+# Roboflow returns class strings (e.g. "paper_red"). Map them to the SDK's
+# (label, color) pair. Used as a fallback if `class_id` is missing.
+CLASS_NAME_MAP = {
+    "paper_red":    ("paper", "red"),
+    "paper_blue":   ("paper", "blue"),
+    "paper_yellow": ("paper", "yellow"),
+}
+
+
+def process_segment(svo_path: Path, out_path: Path, model,
                     conf: float = 0.25) -> int:
     """Process one SVO segment → one JSONL file. Returns frames processed."""
     zed = sl.Camera()
@@ -396,22 +407,33 @@ def process_segment(svo_path: Path, out_path: Path, model: YOLO,
             zed.retrieve_image(image, sl.VIEW.LEFT)
             img_bgr = image.get_data()[:, :, :3]  # BGRA → BGR
 
-            # Ultralytics returns boxes in native image coords. We pass
-            # imgsz=640 so internally it letterboxes to 640 then reverses.
-            results = model(img_bgr, imgsz=640, conf=conf, verbose=False)
+            # Roboflow Inference letterboxes to 640 internally and returns
+            # predictions in the input image's native pixel coordinates.
+            result = model.infer(img_bgr, confidence=conf)[0]
 
-            for box in results[0].boxes:
-                cls_id = int(box.cls[0])
-                if cls_id not in CLASS_MAP:
-                    continue
-                label, color = CLASS_MAP[cls_id]
-                x1, y1, x2, y2 = (int(round(v)) for v in box.xyxy[0].tolist())
+            for pred in result.predictions:
+                # Prefer class_id, fall back to class name
+                cls_id = getattr(pred, "class_id", None)
+                if cls_id is not None and int(cls_id) in CLASS_MAP:
+                    label, color = CLASS_MAP[int(cls_id)]
+                elif pred.class_name in CLASS_NAME_MAP:
+                    label, color = CLASS_NAME_MAP[pred.class_name]
+                else:
+                    continue  # skip unknown classes
+
+                # Roboflow gives (cx, cy, w, h) in native coords. Convert to xyxy.
+                cx, cy, w, h = pred.x, pred.y, pred.width, pred.height
+                x1 = int(round(cx - w / 2))
+                y1 = int(round(cy - h / 2))
+                x2 = int(round(cx + w / 2))
+                y2 = int(round(cy + h / 2))
+
                 handle.write(json.dumps({
                     "frame_idx": local_frame_idx,
                     "bbox_xyxy": [x1, y1, x2, y2],
                     "label": label,
                     "color": color,
-                    "confidence": float(box.conf[0]),
+                    "confidence": float(pred.confidence),
                 }) + "\n")
             local_frame_idx += 1
 
@@ -423,15 +445,23 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--segments-dir", required=True, type=Path)
     ap.add_argument("--out-dir",      required=True, type=Path)
-    ap.add_argument("--model",        required=True, type=Path)
+    ap.add_argument("--model-id",     required=True,
+                    help="Roboflow model id, e.g. workspace/project/version")
+    ap.add_argument("--api-key", default=os.environ.get("ROBOFLOW_API_KEY"),
+                    help="Roboflow API key (or set ROBOFLOW_API_KEY env)")
     ap.add_argument("--conf", type=float, default=0.25)
     ap.add_argument("--poll-seconds", type=float, default=2.0,
                     help="how often to scan for new finished segments")
     args = ap.parse_args()
 
-    model = YOLO(str(args.model))
-    seen: set[str] = set()
+    if not args.api_key:
+        ap.error("api key required (--api-key or ROBOFLOW_API_KEY env)")
 
+    print("[detector_worker] loading model (may compile TRT engine on first run)…")
+    model = get_model(model_id=args.model_id, api_key=args.api_key)
+    print("[detector_worker] model ready")
+
+    seen: set[str] = set()
     while True:
         for svo in sorted(args.segments_dir.glob("segment-*.svo2")):
             seg_id = svo.stem  # "segment-00001"
@@ -440,13 +470,13 @@ def main():
                 seen.add(seg_id)
                 continue
             # Recorder writes segments sequentially. A segment-NNNNN is
-            # "finished" once segment-N+1 exists.
+            # "finished" once segment-N+1 exists on disk.
             next_id = f"segment-{int(seg_id.split('-')[1]) + 1:05d}.svo2"
             if not (args.segments_dir / next_id).exists():
                 continue
-            print(f"[yolo_worker] processing {seg_id}")
+            print(f"[detector_worker] processing {seg_id}")
             n = process_segment(svo, out_path, model, conf=args.conf)
-            print(f"[yolo_worker]   wrote {n} frames → {out_path}")
+            print(f"[detector_worker]   wrote {n} frames → {out_path}")
             seen.add(seg_id)
 
         time.sleep(args.poll_seconds)
@@ -460,7 +490,7 @@ if __name__ == "__main__":
 
 <h3>Stage 9 — Wire it into the SDK config</h3>
 
-<p>On the Jetson, the SDK's config now points at the YOLO output directory:</p>
+<p>On the Jetson, the SDK's config points at the detector worker's output directory:</p>
 
 <pre><code>{
   "recording": {
@@ -476,7 +506,7 @@ if __name__ == "__main__":
   },
   "paper": {
     "mode": "external_boxes",
-    "external_detections_dir": "runs/&lt;session_id&gt;/yolo",
+    "external_detections_dir": "runs/&lt;session_id&gt;/detections",
     "confidence_threshold": 25,
     "classes": {
       "0": {"label": "paper", "color": "red"},
@@ -499,31 +529,32 @@ if __name__ == "__main__":
 <pre><code># terminal 1 — recorder + main SDK
 python -m zed_positional_measurement run --config config.json
 
-# terminal 2 — YOLO worker
-python3 yolo_worker.py \
+# terminal 2 — detector worker (RF-DETR via Roboflow Inference)
+export ROBOFLOW_API_KEY=...        # if not already in ~/.bashrc
+python3 detector_worker.py \
     --segments-dir runs/smoke-test-01/segments \
-    --out-dir      runs/smoke-test-01/yolo \
-    --model        perception/models/papers_v1.pt</code></pre>
+    --out-dir      runs/smoke-test-01/detections \
+    --model-id     YOUR_WS/circle-corner-detection/3</code></pre>
 
-<p>The SDK's per-segment background worker (already wired in <code>pipeline.record_session</code>) will pull each segment as the YOLO worker finishes the corresponding JSONL, and the frame stream at <code>runs/smoke-test-01/stream/frames.jsonl</code> grows during flight.</p>
+<p>The SDK's per-segment background worker (already wired in <code>pipeline.record_session</code>) will pull each segment as the detector worker finishes the corresponding JSONL, and the frame stream at <code>runs/smoke-test-01/stream/frames.jsonl</code> grows during flight.</p>
 
 <h2>Decisions you still need to make</h2>
 
 <ol>
-  <li><strong>Class count.</strong> How many target colours does AEAC 2026 require? — drives Roboflow class setup.</li>
-  <li><strong>YOLO model size.</strong> Start with <code>yolo11s</code>. Drop to <code>n</code> if Jetson is fps-bound.</li>
-  <li><strong>Cloud provider.</strong> Runpod 4090 spot for first cut. Lambda A100 if reliability matters more than $.</li>
-  <li><strong>SVO ↔ training frame budget.</strong> Aim for 300–500 labeled boxes per colour minimum, 1000+ for production. <code>every_n=15</code> from a 5-minute flight gives ~600 frames — at ~3 papers per frame that's enough labels for one colour, so plan recordings accordingly.</li>
-  <li><strong>Run YOLO on the SVO or live?</strong> Above is the simpler design — let the recorder write SVO segments and have the YOLO worker tail the segments directory. If we ever want to skip the SVO disk hop and tee the live camera frames into both the recorder and YOLO, that's a bigger refactor and not needed for the smoke test.</li>
+  <li><strong>Class count.</strong> How many target colours does AEAC 2026 require? — drives the Roboflow class setup.</li>
+  <li><strong>RF-DETR Small vs Medium.</strong> Default to Small. Switch to Medium only if the Small training run lands at &lt; 0.85 mAP@50 and you've already cleaned the labels. Medium roughly doubles Jetson latency but still fits comfortably inside the 20s-per-segment budget.</li>
+  <li><strong>SVO ↔ training frame budget.</strong> Aim for 300–500 labeled boxes per colour minimum, 1000+ for production. <code>every_n=15</code> from a 5-minute flight gives ~600 frames — at ~3 papers per frame that's enough labels for one colour, so plan recordings accordingly. RF-DETR is sample-efficient enough that the lower end works for a first-cut model.</li>
+  <li><strong>Run the detector on the SVO or live?</strong> Above is the simpler design — let the recorder write SVO segments and have the detector worker tail the segments directory. If we ever want to skip the SVO disk hop and tee the live camera frames into both the recorder and the detector, that's a bigger refactor and not needed for the smoke test.</li>
 </ol>
 
 <h2>Things to watch on the first hardware run</h2>
 
 <ul>
-  <li>Per-segment YOLO worker wall-time. If a 20s segment takes &gt; 20s to process, YOLO becomes the bottleneck and frame stream falls behind real time.</li>
+  <li>Per-segment detector wall-time. If a 20s segment takes &gt; 20s to process, the detector becomes the bottleneck and the frame stream falls behind real time. Expected on Orin AGX with RF-DETR Small + 30fps SVO: ~10s per 20s segment.</li>
   <li>Class confusion in <code>circle_processing.cluster_papers</code> output. If yellow papers are getting clustered as red, the labeling was inconsistent and the cluster colour vote will fail loudly.</li>
-  <li>Detection rate at far range. ZED at HD1200 sees ~5m papers clearly; YOLO will get lossy past that. Compare detection density vs. estimated distance in <code>frames.jsonl</code> for the first flight to calibrate expectations.</li>
+  <li>Detection rate at far range. ZED at HD1200 sees ~5m papers clearly; even a strong model degrades past that. Compare detection density vs. estimated distance in <code>frames.jsonl</code> for the first flight to calibrate expectations.</li>
   <li>Frame-index alignment. The first ZED <code>grab()</code> on an SVO is <code>local_frame_idx = 0</code>. The SDK's <code>process_segment</code> uses the same 0-based convention. Sanity-check by opening the first JSONL and confirming detections at <code>frame_idx=0</code> exist for the first paper-containing frame in the SVO.</li>
+  <li>Box-format correctness. Roboflow returns <code>(cx, cy, w, h)</code> — confirm the worker's xyxy conversion lands on the actual paper by overlaying boxes from the first JSONL onto the corresponding SVO frame. If they're shifted, the conversion math is wrong, not the model.</li>
 </ul>
 
 <h2>Files this doc covers</h2>
@@ -534,8 +565,8 @@ python3 yolo_worker.py \
 <tr><td><code>perception/record_svo.py</code></td><td>exists</td><td>1</td></tr>
 <tr><td><code>perception/extract_training_frames.py</code></td><td>exists</td><td>2</td></tr>
 <tr><td><code>perception/upload_to_roboflow.py</code></td><td>exists</td><td>3</td></tr>
-<tr><td><code>perception/yolo_worker.py</code></td><td><strong>to write</strong> (snippet above)</td><td>8</td></tr>
-<tr><td><code>perception/models/papers_v1.pt</code> (or <code>.onnx</code>)</td><td><strong>artifact from training</strong></td><td>5, 7</td></tr>
+<tr><td><code>perception/detector_worker.py</code></td><td><strong>to write</strong> (snippet above)</td><td>8</td></tr>
+<tr><td>RF-DETR Small model, served via Roboflow Inference</td><td><strong>artifact from training</strong> — referenced by <code>workspace/project/version</code></td><td>5, 7</td></tr>
 <tr><td><code>config.json</code> for the SDK</td><td><strong>to write</strong> (snippet above)</td><td>9</td></tr>
 </tbody>
 </table>
