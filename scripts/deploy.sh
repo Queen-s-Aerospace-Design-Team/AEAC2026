@@ -4,11 +4,30 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DEPLOYMENT_DIR="$SCRIPT_DIR/../deployment"
+
 COMPOSE_BASE="$REPO_DEPLOYMENT_DIR/compose.deployment.yml"
 COMPOSE_MISSION="$REPO_DEPLOYMENT_DIR/compose.mission.yml"
 COMPOSE_PERCEPTION="$REPO_DEPLOYMENT_DIR/compose.perception.yml"
 COMPOSE_DRIVE="$REPO_DEPLOYMENT_DIR/compose.drive.yml"
 COMPOSE_UXRCE="$REPO_DEPLOYMENT_DIR/compose.uxrce.yml"
+COMPOSE_HARDWARE="$REPO_DEPLOYMENT_DIR/compose.hardware.yml"
+
+COMPOSE_FILES=(
+    -f "$COMPOSE_BASE"
+    -f "$COMPOSE_MISSION"
+    -f "$COMPOSE_PERCEPTION"
+    -f "$COMPOSE_DRIVE"
+    -f "$COMPOSE_UXRCE"
+    -f "$COMPOSE_HARDWARE"
+)
+
+AVAILABLE_SERVICES=(
+    "mission"
+    "perception"
+    "drive"
+    "uxrce"
+    "hardware-controller"
+)
 
 STARTUP_LOG_LINES="100"
 CMD="${1:-up}" # CMD defaults to 'up'
@@ -16,6 +35,7 @@ COMPOSE_TARGET="${2:-all}" # Defaults to composing all files
 RESTART_TARGET="${2:-all}"
 LOGS_TARGET="${2:-all}"
 ATTACH_TARGET="${2:-mission}" # attach default to mission service
+PULL_POLICY="${PULL_POLICY:-missing}" # defaults to 'docker compose ... --pull=missing'
 
 die() {
     echo "Error: $*" >&2
@@ -27,103 +47,106 @@ usage() {
 Usage: ./deploy [command] [target]
 
 Commands:
-up       Start deployment in background (default)
-down     Stop and remove deployment containers
-restart  Restart deployment containers
-logs     Follow deployment logs
-status   Show deployment container status
-attach   Open an interactive shell in the running deployment container
+- up       Start deployment (default)
+- down     Stop and remove deployment containers
+- restart  Restart deployment containers
+- logs     Follow deployment logs
+- status   Show deployment container status
+- attach   Open an interactive shell in the running deployment container
+
+Targets:
+- all
+- mission
+- perception
+- drive
+- uxrce
+- hardware
 
 Notes:
-- target: all|mission|perception|drive|uxrce
+- target 'all' specifies all targets
 - attach defaults to mission
-- logs/restart use target as the service when target != all
-- Image pulling behavior is controlled in compose via pull_policy (currently 'missing').
-- After `up`, prints a number of log lines for specified service
+- Set PULL_POLICY=always to force `docker compose up` to pull updated images
+    - Possible PULL_POLICY values: always|missing|never
+    - PULL_POLICY defaults to 'missing'
 
 Examples:
-- ./deploy
+- ./deploy up
+- export PULL_POLICY=always && ./deploy up
 - ./deploy up perception
 - ./deploy logs perception
-- ./deploy restart all
+- ./deploy restart 
 - ./deploy attach mission
 USAGE
-}
-
-command -v docker >/dev/null 2>&1 || die "docker is not installed or not in PATH"
-[ -f "$COMPOSE_BASE" ] || die "compose file not found: $COMPOSE_BASE"
-
-docker compose version >/dev/null 2>&1 || die "docker compose plugin is unavailable"
-
-# Added a helper 
-set_compose_files() {
-    case "$1" in
-        mission)
-            COMPOSE_FILES="-f $COMPOSE_MISSION"
-            ;;
-        perception)
-            COMPOSE_FILES="-f $COMPOSE_PERCEPTION"
-            ;;
-        drive)
-            COMPOSE_FILES="-f $COMPOSE_DRIVE"
-            ;;
-        uxrce)
-            COMPOSE_FILES="-f $COMPOSE_UXRCE"
-            ;;
-        all|*)
-            COMPOSE_FILES="-f $COMPOSE_MISSION \
-                           -f $COMPOSE_PERCEPTION \
-                           -f $COMPOSE_DRIVE \
-                           -f $COMPOSE_UXRCE"
-            ;;
-    esac
 }
 
 run_compose() {
     # -p supplues the compose project name. Causes docker to group resources under this
     # specific project name. Makes compose down easier to execute.
-    docker compose -p qadt-deployment $COMPOSE_FILES "$@"
+    if [ "$1" = "up" ] && [ -n "$PULL_POLICY" ]; then
+        echo "docker compose up with PULL_POLICY=$PULL_POLICY..."
+        docker compose "${COMPOSE_FILES[@]}" -p qadt-deployment "$1" --pull "$PULL_POLICY" "${@:2}"
+    else
+        docker compose "${COMPOSE_FILES[@]}" -p qadt-deployment "$@"
+    fi
 }
 
-set_compose_files $COMPOSE_TARGET
+get_services_for_target() {
+    case "$1" in
+        all)
+            echo "${AVAILABLE_SERVICES[@]}"
+            ;;
+        mission)
+            echo "mission"
+            ;;
+        perception)
+            echo "perception"
+            ;;
+        drive)
+            echo "drive"
+            ;;
+        uxrce)
+            echo "uxrce"
+            ;;
+        hardware)
+            echo "hardware-controller"
+            ;;
+        *)
+            die "invalid target '$1'"
+            ;;
+    esac
+}
+
+UP_SERVICES="$(get_services_for_target "$COMPOSE_TARGET")"
+RESTART_SERVICES="$(get_services_for_target "$RESTART_TARGET")"
+LOG_SERVICES="$(get_services_for_target "$LOGS_TARGET")"
+ATTACH_SERVICE="$(get_services_for_target "$ATTACH_TARGET")"
 
 case "$CMD" in
     up)
-        run_compose up -d
-        echo "Recent startup logs (${STARTUP_LOG_LINES} lines):"
-        run_compose logs --tail=$STARTUP_LOG_LINES -f
+
+        run_compose up -d $UP_SERVICES
+        run_compose logs --tail=$STARTUP_LOG_LINES -f $UP_SERVICES
         ;;
     down)
         run_compose down --remove-orphans
         ;;
     restart)
-        if [ "$RESTART_TARGET" = "all" ]; then
-            run_compose restart
-            run_compose logs --tail=$STARTUP_LOG_LINES -f
-        else
-            run_compose restart "$RESTART_TARGET"
-            run_compose logs --tail=$STARTUP_LOG_LINES -f "$RESTART_TARGET"
-        fi
+       
+        run_compose restart $RESTART_SERVICES
+        run_compose logs --tail=$STARTUP_LOG_LINES -f $RESTART_SERVICES
         ;;
     logs)
-        if [ "$LOGS_TARGET" = "all" ]; then
-            run_compose logs --tail=$STARTUP_LOG_LINES -f
-        else
-            run_compose logs --tail=$STARTUP_LOG_LINES -f "$LOGS_TARGET"
-        fi
+
+        run_compose logs --tail=$STARTUP_LOG_LINES -f $LOG_SERVICES
         ;;
     status)
         run_compose ps
         ;;
     attach)
-        CONTAINER_ID="$(run_compose ps -q "$ATTACH_TARGET")"
+        CONTAINER_ID="$(run_compose ps -q "$ATTACH_SERVICE")"
         [ -n "$CONTAINER_ID" ] || die "service '$ATTACH_TARGET' is not running"
 
-        if docker exec -it "$CONTAINER_ID" bash 2>/dev/null; then
-            :
-        else
-            docker exec -it "$CONTAINER_ID" sh
-        fi
+        docker exec -it "$CONTAINER_ID" bash 2>/dev/null
         ;;
     -h|--help|help)
         usage
